@@ -10,6 +10,21 @@ const PRIORITY_COLORS = {
   low: "bg-green-500/20 text-green-400",
 };
 
+// Avatar color palette for unique user backgrounds (#109)
+const AVATAR_COLORS = [
+  "bg-purple-700",
+  "bg-blue-600",
+  "bg-green-600",
+  "bg-rose-600",
+  "bg-amber-600",
+];
+
+const getAvatarColor = (name) => {
+  if (!name) return AVATAR_COLORS[0];
+  const colorIndex = name.charCodeAt(0) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[colorIndex];
+};
+
 const timeAgo = (date) => {
   const diff = Date.now() - new Date(date);
   const days = Math.floor(diff / 86400000);
@@ -28,7 +43,6 @@ const TaskCard = ({ task, index, onSelect }) => {
   today.setHours(0, 0, 0, 0);
   const dueDate = new Date(task.dueDate);
   const isOverdue = task.dueDate && dueDate < today && task.status !== "done";
-  // const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "Done";
   // ------------------
 
   return (
@@ -175,7 +189,10 @@ const TaskCard = ({ task, index, onSelect }) => {
               )}
             </div>
             {task.assignee?.name && (
-              <div className="w-5 h-5 rounded-full bg-purple-700 flex items-center justify-center text-[9px] font-bold text-white">
+              <div 
+                title={task.assignee.name} 
+                className={`w-5 h-5 rounded-full ${getAvatarColor(task.assignee.name)} flex items-center justify-center text-[9px] font-bold text-white cursor-pointer`}
+              >
                 {task.assignee.name[0].toUpperCase()}
               </div>
             )}
