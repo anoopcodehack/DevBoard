@@ -36,10 +36,16 @@ const Dashboard = () => {
     }
   };
 
+  const handleLogout = () => {
+  if (window.confirm("Are you sure you want to logout?")) {
+    logout();
+  }
+};
+
   return (
-    <div className="flex flex-col h-screen bg-[var(--bg-primary)]">
+    <div className="flex flex-col h-screen bg-(--bg-primary)">
       {/* Top Navbar */}
-      <div className="flex flex-col gap-3 px-5 py-3 bg-[var(--bg-card)] border-b border-[var(--border-primary)] md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 px-5 py-3 bg-(--bg-card) border-b border-(--border-primary) md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-lg">🗂️</span>
           <span className="font-semibold text-[#f0f0f0]">DevBoard</span>
@@ -65,18 +71,18 @@ const Dashboard = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search tasks by title or tag..."
-              className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-xl px-4 py-2.5 text-sm text-[#f0f0f0] placeholder-[#555] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/15 transition"
+              className="w-full bg-(--bg-primary) border border-(--border-primary) rounded-xl px-4 py-2.5 text-sm text-[#f0f0f0] placeholder-[#555] focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/15 transition"
             />
           </label>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-[#666]">👋 {user?.name}</span>
-          <button
-            onClick={logout}
-            className="text-xs text-[#666] hover:text-[#aaa] transition px-3 py-1.5 border border-[var(--border-primary)] rounded-lg"
-          >
-            Logout
-          </button>
+         <button
+  onClick={handleLogout}
+  className="text-xs text-[#666] hover:text-[#aaa] transition px-3 py-1.5 border border-(--border-primary) rounded-lg"
+>
+  Logout
+</button>
         </div>
       </div>
 
