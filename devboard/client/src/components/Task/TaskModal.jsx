@@ -19,6 +19,7 @@ const TaskModal = ({
     githubIssueNumber: task?.githubIssueNumber || "",
     dueDate: task?.dueDate || "",
   });
+  const [descCount, setDescCount] = useState(task?.description?.length || 0);
   const [snippetCode, setSnippetCode] = useState("");
   const [snippetLang, setSnippetLang] = useState("javascript");
   const [loading, setLoading] = useState(false);
@@ -56,6 +57,7 @@ const TaskModal = ({
         ...prev,
         description: data.description,
       }));
+      setDescCount(data.description ? data.description.length : 0);
     } catch (err) {
       setAiError(err.message || "Error generating AI description.");
     } finally {
@@ -133,12 +135,17 @@ const TaskModal = ({
             <textarea
               placeholder="Description (optional) or generate with AI..."
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => {
+                setForm({ ...form, description: e.target.value });
+                setDescCount(e.target.value.length);
+              }}
+              maxLength={300}
               rows={3}
               className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-sm text-[#f0f0f0] placeholder-[#555] focus:outline-none focus:border-purple-500 resize-none"
             />
+            <span className="text-[10px] text-[#555] text-right block mt-1">
+              {descCount}/300
+            </span>
 
             {aiError && (
               <p className="text-xs text-red-400 mt-1">{aiError}</p>
