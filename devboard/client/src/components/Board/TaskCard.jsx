@@ -3,6 +3,7 @@ import { Draggable } from "@hello-pangea/dnd";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useBoard } from "../../context/BoardContext";
+import { useSuggestTags } from "../../hooks/useSuggestTags";
 
 const PRIORITY_COLORS = {
   high: "bg-red-500/20 text-red-400",
@@ -21,7 +22,8 @@ const timeAgo = (date) => {
 const TaskCard = ({ task, index, onSelect }) => {
   const [expanded, setExpanded] = useState(false);
   const [selectedSnippet, setSelectedSnippet] = useState(0);
-  const { activeTag, setActiveTag } = useBoard();
+  const { activeTag, setActiveTag , updateTask } = useBoard();
+  const { suggestedTags,loadingTags,handleSuggestTags,handleAddTag } = useSuggestTags(task,selectedSnippet,updateTask);
 
   // Check if the task due date has passed and the task is not completed ---------
   const today = new Date();
@@ -63,8 +65,9 @@ const TaskCard = ({ task, index, onSelect }) => {
 
           {/* Code snippets preview */}
           {task.snippets?.length > 0 && (
-            <div className="mb-2">
-              <button
+            <div className=" mb-2">
+              <div className="flex items-center justify-between mb-1">
+                 <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setExpanded((v) => !v);
@@ -74,6 +77,17 @@ const TaskCard = ({ task, index, onSelect }) => {
                 {"</>"} {task.snippets.length} snippet
                 {task.snippets.length > 1 ? "s" : ""} {expanded ? "▲" : "▼"}
               </button>
+
+                <button
+                 onClick={handleSuggestTags}
+                 disabled={loadingTags}
+                  className="text-[10px] px-2 py-1 rounded bg-purple-600 text-white hover:bg-purple-700"
+                >
+                  {loadingTags ? "Loading..." : "Suggest tags"}
+                </button>
+              </div>
+             
+
               <div className="flex gap-1 mb-2">
                 {task.snippets.map((snippet, index) => (
                   <button
@@ -88,6 +102,24 @@ const TaskCard = ({ task, index, onSelect }) => {
                   </button>
                 ))}
               </div>
+
+                {suggestedTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                      {suggestedTags.map((tag) => (
+                        <button
+                          key={tag}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddTag(tag);
+                          }}
+                           className="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/40"
+                        >
+                          + {tag}
+                        </button>
+                      ))}
+                  </div>
+                )}
+
 
               {/* Updated Snippet Block with Copy Button */}
               {expanded && (
