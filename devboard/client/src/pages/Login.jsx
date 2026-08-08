@@ -69,8 +69,9 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0f10] via-[#1a1020] to-[#0f0f10] flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute w-72 h-72 bg-purple-600/10 rounded-full blur-3xl top-1/4 left-1/2 -translate-x-1/2" />
+      <div className="w-full max-w-sm relative">
         <div className="text-center mb-8">
           <div className="text-4xl mb-2">🗂️</div>
           <h1 className="text-2xl font-bold text-[#f0f0f0]">DevBoard</h1>
