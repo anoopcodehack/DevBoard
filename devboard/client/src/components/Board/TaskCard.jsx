@@ -22,6 +22,7 @@ const timeAgo = (date) => {
 const TaskCard = ({ task, index, onSelect }) => {
   const [expanded, setExpanded] = useState(false);
   const [selectedSnippet, setSelectedSnippet] = useState(0);
+  const [copied, setCopied] = useState(false);
   const { activeTag, setActiveTag , updateTask } = useBoard();
   const { suggestedTags,loadingTags,handleSuggestTags,handleAddTag } = useSuggestTags(task,selectedSnippet,updateTask);
 
@@ -131,10 +132,12 @@ const TaskCard = ({ task, index, onSelect }) => {
                         navigator.clipboard.writeText(
                           task.snippets[selectedSnippet].code
                         );
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
                       }}
                       className="text-[10px] px-2 py-1 rounded bg-purple-600 text-white hover:bg-purple-700"
                     >
-                      Copy
+                      {copied ? "Copied! ✅" : "Copy"}
                     </button>
                   </div>
 
