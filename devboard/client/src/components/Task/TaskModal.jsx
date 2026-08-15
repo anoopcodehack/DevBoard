@@ -84,6 +84,20 @@ const TaskModal = ({
     await updateTask(task._id, { snippets: updatedSnippets });
   };
 
+  const renderWithMentions = (text) =>
+    text.split(/(@\w+)/g).map((part, i) =>
+      part.startsWith("@") ? (
+        <span
+          key={i}
+          className="text-purple-300 bg-purple-950/50 border border-purple-800/50 rounded px-1 py-0.5"
+        >
+          {part}
+        </span>
+      ) : (
+        <span key={i}>{part}</span>
+      )
+    );
+
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);
     const handlePop = () => {
@@ -192,6 +206,12 @@ const TaskModal = ({
                 ? "s"
                 : ""}
             </p>
+            {/* Live preview with @username mentions highlighted */}
+            {form.description.trim() && (
+              <p className="text-xs text-[#a0a0a5] mt-1.5 whitespace-pre-wrap break-words">
+                {renderWithMentions(form.description)}
+              </p>
+            )}
 
             {aiError && (
               <p className="text-xs text-red-400 mt-1">{aiError}</p>
