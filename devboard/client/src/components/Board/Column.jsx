@@ -17,6 +17,7 @@ const Column = ({
   isActive,
 }) => {
   const [sorted, setSorted] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
@@ -30,7 +31,6 @@ const Column = ({
   const displayTasks = sorted
     ? [...tasks].sort((a, b) => {
       const order = { high: 0, medium: 1, low: 2 };
-
       return (order[a.priority] ?? 3) - (order[b.priority] ?? 3);
     })
     : tasks;
@@ -66,39 +66,52 @@ const Column = ({
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setSorted((value) => !value)}
-          className="text-[10px] text-[#555] hover:text-purple-400 transition"
-        >
-          {sorted ? "🔃 sorted" : "🔃 sort"}
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setCollapsed((v) => !v)}
+            aria-label={collapsed ? `Expand ${config.label}` : `Collapse ${config.label}`}
+            title={collapsed ? "Expand column" : "Collapse column"}
+            className="text-[#555] hover:text-[#aaa] text-xs transition"
+          >
+            {collapsed ? "▶" : "▼"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSorted((value) => !value)}
+            className="text-[10px] text-[#555] hover:text-purple-400 transition"
+          >
+            {sorted ? "🔃 sorted" : "🔃 sort"}
+          </button>
+        </div>
       </div>
 
-      {/* Droppable cards area */}
+      {/* Droppable cards area (kept mounted so drag-and-drop still works) */}
       <Droppable droppableId={columnId}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`flex flex-col gap-2 flex-1 min-h-[80px] rounded-lg p-1 transition-colors
+            className={`flex flex-col gap-2 flex-1 ${collapsed ? "" : "min-h-[80px]"
+              } rounded-lg p-1 transition-colors
               ${snapshot.isDraggingOver ? "bg-purple-500/5" : ""}`}
           >
-            {tasks.length === 0 ? (
-              <div className="flex items-center justify-center text-center p-3 text-xs text-[#666] border border-dashed border-[var(--border-primary)] rounded-md my-auto">
-                No tasks here — drag one in or click + Add card
-              </div>
-            ) : (
-              displayTasks.map((task, index) => (
-                <TaskCard
-                  key={task._id}
-                  task={task}
-                  index={index}
-                  onSelect={onSelectTask}
-                />
-              ))
-            )}
-
+            {!collapsed &&
+              (tasks.length === 0 ? (
+                <div className="flex items-center justify-center text-center p-3 text-xs text-[#666] border border-dashed border-[var(--border-primary)] rounded-md my-auto">
+                  No tasks here — drag one in or click + Add card
+                </div>
+              ) : (
+                displayTasks.map((task, index) => (
+                  <TaskCard
+                    key={task._id}
+                    task={task}
+                    index={index}
+                    onSelect={onSelectTask}
+                  />
+                ))
+              ))}
             {provided.placeholder}
           </div>
         )}
