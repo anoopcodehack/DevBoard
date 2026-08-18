@@ -21,9 +21,22 @@ const Dashboard = () => {
   useEffect(() => {
     document.title = "Dashboard — DevBoard";
   }, []);
+
   const [selectedTask, setSelectedTask] = useState(null);
   const [isCreatingFirstTask, setIsCreatingFirstTask] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
 
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
   if (loading) {
     return (
       <div className="flex gap-4 p-4">
@@ -99,6 +112,9 @@ const Dashboard = () => {
           >
             ⭐ Star on GitHub
           </a>
+          {!isOnline && (
+            <span className="text-xs text-red-400">🔴 Offline</span>
+          )}
           <span className="text-xs text-[#666]">👋 {user?.name}</span>
 
           <button
