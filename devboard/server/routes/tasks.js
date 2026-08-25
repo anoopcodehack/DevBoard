@@ -16,7 +16,10 @@ router.get("/", protect, async (req, res) => {
 // POST /api/tasks — create task
 router.post("/", protect, async (req, res) => {
   try {
-    const task = await Task.create(req.body);
+    const task = await Task.create({
+      ...req.body,
+      tags: Task.sanitizeTags(req.body.tags),
+    });
     res.status(201).json(task);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -26,11 +29,22 @@ router.post("/", protect, async (req, res) => {
 // PUT /api/tasks/:id — update task (status, content, etc.)
 router.put("/:id", protect, async (req, res) => {
   try {
-    const task = await Task.findByIdAndUpdate(req.params.id, req.body, {
+    // Only touch tags when the caller sends them — partial updates like
+    // { pomodoroCount } or { status, order } must not wipe existing tags.
+    const updates = { ...req.body };
+    if (req.body.tags !== undefined) {
+      updates.tags = Task.sanitizeTags(req.body.tags);
+    }
+    const updatedTask = await Task.findByIdAndUpdate(req.params.id, updates, {
       new: true,
-    });
-    if (!task) return res.status(404).json({ message: "Task not found" });
-    res.json(task);
+    }).populate("assignee", "name email avatar");
+    if (!updatedTask) return res.status(404).json({ message: "Task not found" });
+
+    // Broadcast so other open boards update without refresh
+    const io = req.app.get("io");
+    if (io) io.emit("task:updated", updatedTask);
+
+    res.json(updatedTask);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

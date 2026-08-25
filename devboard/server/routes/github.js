@@ -43,7 +43,7 @@ router.post("/import", protect, async (req, res) => {
       title,
       githubIssueUrl,
       githubIssueNumber,
-      tags: tags || [],
+      tags: Task.sanitizeTags(tags),
       status: "backlog",
     });
     res.status(201).json(task);

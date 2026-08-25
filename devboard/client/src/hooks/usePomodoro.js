@@ -4,6 +4,33 @@ const WORK_DURATION = 25 * 60; // 25 minutes
 const BREAK_DURATION = 5 * 60; // 5 minutes
 const LONG_BREAK_DURATION = 15 * 60; // 15 minutes
 
+// 🎵 Web Audio API helper function for soft ding sound
+const playSoftDing = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sine"; 
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+
+   
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.4);
+  } catch (err) {
+    console.error("Audio playback error:", err);
+  }
+};
+
 export const usePomodoro = (onSessionComplete) => {
   const [timeLeft, setTimeLeft] = useState(WORK_DURATION);
   const [isRunning, setIsRunning] = useState(false);
@@ -19,11 +46,15 @@ export const usePomodoro = (onSessionComplete) => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(intervalRef.current);
+
+            // 🚨 Play sound alert when timer reaches 0
+            playSoftDing();
+
             setIsRunning(false);
             if (!isBreak) {
               const nextCount = sessionCount + 1;
               setSessionCount(nextCount);
-              localStorage.setItem("pom_sessions", sessionCount + 1);
+              localStorage.setItem("pom_sessions", nextCount);
               if (onSessionComplete) onSessionComplete();
               setIsBreak(true);
               const isLongBreak = nextCount % 4 === 0 && nextCount > 0;

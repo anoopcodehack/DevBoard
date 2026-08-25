@@ -74,6 +74,41 @@ No local MongoDB? Use a free [MongoDB Atlas](https://www.mongodb.com/cloud/atlas
 > ```
 > You'll only need the full backend setup if your issue touches API routes, auth, or data persistence.
 
+## 🪟 Windows Setup
+
+If you're on Windows, use Git Bash or WSL for the best experience.
+
+### Clone
+
+```bash
+git clone https://github.com/YOUR_USERNAME/devboard.git
+cd devboard/devboard
+```
+
+### Install dependencies
+
+```bash
+npm run install:all
+```
+
+### Copy environment file
+
+```bash
+cp server/.env.example server/.env
+```
+
+### Run
+
+```bash
+npm run dev
+```
+
+Common Windows issues:
+
+- Use Git Bash, not CMD.
+- If port 5000 is busy, run `netstat -ano | findstr :5000`.
+- If you run into MongoDB path issues, use MongoDB Atlas instead.
+
 ## 📐 Code Style
 
 To keep the codebase consistent, please follow these conventions:

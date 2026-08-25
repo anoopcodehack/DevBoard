@@ -14,11 +14,18 @@ const Login = () => {
   const [isRegister, setIsRegister] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [show, setShow] = useState(false);
 
   const handleSubmit = async () => {
     setError("");
+
+    if (isRegister && !form.name.trim()) return setError("Name is required");
+    if (!form.email.includes("@")) return setError("Enter a valid email");
+    if (form.password.length < 6)
+      return setError("Password must be at least 6 characters");
+    
     if (!form.email || !form.password || (isRegister && !form.name)) {
       setError("Please fill in all required fields");
       return;
@@ -27,24 +34,40 @@ const Login = () => {
     setLoading(true);
     try {
       const endpoint = isRegister ? "/api/auth/register" : "/api/auth/login";
-      
+
       const payload = isRegister
-        ? { name: form.name.trim(), email: form.email.trim(), password: form.password }
+        ? {
+            name: form.name.trim(),
+            email: form.email.trim(),
+            password: form.password,
+          }
         : { email: form.email.trim(), password: form.password };
 
       const { data } = await axios.post(endpoint, payload);
 
-      // 1. Save user state to context
-      if (login) {
-        login(data);
-      }
-
-      // 2. Clear error & Direct Navigate to Dashboard Route "/"
       setError("");
-      navigate("/", { replace: true }); // <-- 3. Router navigate call!
 
+      if (isRegister) {
+        setSuccess("Account created! Welcome to DevBoard 🎉");
+
+        setTimeout(() => {
+          if (login) {
+            login(data);
+          }
+          navigate("/", { replace: true });
+        }, 2000);
+      } else {
+        if (login) {
+          login(data);
+        }
+        navigate("/", { replace: true });
+      }
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || "Something went wrong");
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Something went wrong",
+      );
     } finally {
       setLoading(false);
     }
@@ -56,12 +79,15 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0f10] via-[#1a1020] to-[#0f0f10] flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute w-72 h-72 bg-purple-600/10 rounded-full blur-3xl top-1/4 left-1/2 -translate-x-1/2" />
+      <div className="w-full max-w-sm relative">
         <div className="text-center mb-8">
           <div className="text-4xl mb-2">🗂️</div>
           <h1 className="text-2xl font-bold text-[#f0f0f0]">DevBoard</h1>
-          <p className="text-[#666] text-sm mt-1">Kanban built for developers</p>
+          <p className="text-[#666] text-sm mt-1">
+            Kanban built for developers
+          </p>
         </div>
 
         <div className="bg-[var(--bg-card)] border border-[var(--border-primary)] rounded-xl p-6 flex flex-col gap-3">
@@ -103,20 +129,62 @@ const Login = () => {
 
           {error && <p className="text-red-400 text-xs">{error}</p>}
 
+          {success && (
+            <p className="text-green-400 text-xs text-center">{success}</p>
+          )}
+
           <button
             onClick={handleSubmit}
             disabled={loading}
             className="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-medium transition disabled:opacity-40"
           >
-            {loading ? "Please wait..." : isRegister ? "Create Account" : "Sign In"}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg
+                  className="w-4 h-4 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  />
+                </svg>
+                {isRegister ? "Creating Account..." : "Signing in..."}
+              </span>
+            ) : isRegister ? (
+              "Create Account"
+            ) : (
+              "Sign In"
+            )}
           </button>
+
+          {isRegister && (
+            <p className="text-[10px] text-[#555] text-center leading-snug">
+              By creating an account you agree to our{' '}
+              <a href="#" className="text-purple-400 hover:underline">
+                Terms of Service
+              </a>
+            </p>
+          )}
 
           <button
             type="button"
             onClick={toggleMode}
             className="text-xs text-[#666] hover:text-[#aaa] transition text-center mt-1"
           >
-            {isRegister ? "Already have an account? Sign in" : "No account? Register"}
+            {isRegister
+              ? "Already have an account? Sign in"
+              : "No account? Register"}
           </button>
         </div>
       </div>
