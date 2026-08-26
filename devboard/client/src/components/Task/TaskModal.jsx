@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { useBoard } from "../../context/BoardContext";
 
+const TITLE_MAX_LENGTH = 100;
+const COPY_SUFFIX = " (copy)";
+
 const COLORS = [
   "#7F77DD",
   "#E85D75",
@@ -44,7 +47,8 @@ const TaskModal = ({
   // AI Loading & Error States
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiError, setAiError] = useState("");
-  const { deleteTask } = useBoard();
+  const { deleteTask, addTask } = useBoard();
+  const [duplicating, setDuplicating] = useState(false);
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -127,25 +131,62 @@ const TaskModal = ({
     return () => window.removeEventListener("popstate", handlePop);
   }, [isDirty, onClose]);
 
+  const buildPayload = () => ({
+    ...form,
+    tags: form.tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean),
+    githubIssueNumber: form.githubIssueNumber
+      ? Number(form.githubIssueNumber)
+      : undefined,
+    ...(snippetCode
+      ? { snippets: [{ language: snippetLang, code: snippetCode }] }
+      : {}),
+  });
+
   const handleSave = async () => {
     if (!form.title.trim()) return;
     setLoading(true);
-    const payload = {
-      ...form,
-      tags: form.tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
-      githubIssueNumber: form.githubIssueNumber
-        ? Number(form.githubIssueNumber)
-        : undefined,
-      ...(snippetCode
-        ? { snippets: [{ language: snippetLang, code: snippetCode }] }
-        : {}),
-    };
-    await onSave(payload);
+    await onSave(buildPayload());
     setLoading(false);
     onClose();
+  };
+
+  // The copy carries over everything the modal shows, snippets included —
+  // those are usually the reason for duplicating in the first place. The
+  // GitHub link is deliberately left behind: it points at one specific issue
+  // and would be wrong on a second card. Status stays as it is so the copy
+  // shows up next to the original instead of silently landing in Backlog.
+  const handleDuplicate = async () => {
+    const base = form.title.trim();
+    if (!base) return;
+    const room = TITLE_MAX_LENGTH - COPY_SUFFIX.length;
+    const title =
+      (base.length > room ? base.slice(0, room).trim() : base) + COPY_SUFFIX;
+
+    setDuplicating(true);
+    try {
+      const { githubIssueUrl, githubIssueNumber, ...payload } = buildPayload();
+      await addTask({
+        ...payload,
+        title,
+        // Drop the subdocument _ids so the copy gets its own snippets.
+        snippets: [
+          ...(task.snippets || []).map(({ language, code }) => ({
+            language,
+            code,
+          })),
+          ...(payload.snippets || []),
+        ],
+      });
+      toast.success("Task duplicated");
+      onClose();
+    } catch {
+      toast.error("Could not duplicate task");
+    } finally {
+      setDuplicating(false);
+    }
   };
 
   const handleClose = () => {
@@ -192,7 +233,7 @@ const TaskModal = ({
             autoFocus
             type="text"
             placeholder="Task title *"
-            maxLength={100}
+            maxLength={TITLE_MAX_LENGTH}
             value={form.title}
             onChange={(e) => {
               setForm({ ...form, title: e.target.value });
@@ -201,7 +242,7 @@ const TaskModal = ({
             className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-sm text-[#f0f0f0] placeholder-[#555] focus:outline-none focus:border-purple-500"
           />
           <div className="text-xs text-[#555] text-right -mt-2">
-            {form.title.length}/100
+            {form.title.length}/{TITLE_MAX_LENGTH}
           </div>
 
           {/* Description Section with ✨ AI Button */}
@@ -395,6 +436,16 @@ const TaskModal = ({
                 className="p-2 text-sm text-[#888] hover:text-[#aaa] hover:bg-white/5 rounded-lg transition outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50"
               >
                 📤
+              </button>
+            )}
+            {task && (
+              <button
+                onClick={handleDuplicate}
+                disabled={duplicating || !form.title.trim()}
+                title="Duplicate task"
+                className="p-2 text-sm text-[#888] hover:text-[#aaa] hover:bg-white/5 rounded-lg transition outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 disabled:opacity-40"
+              >
+                📋
               </button>
             )}
             {task && (
