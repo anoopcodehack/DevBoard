@@ -46,6 +46,26 @@ document.title = inProgressCount > 0
 
 
 const [selectedTask, setSelectedTask] = useState(null);
+const [recentTasks, setRecentTasks] = useState(() => {
+  try {
+    return JSON.parse(localStorage.getItem('recent_tasks') || '[]');
+  } catch {
+    return [];
+  }
+});
+
+const handleSelectTask = (task) => {
+  if (!task) return;
+  const recent = JSON.parse(
+    localStorage.getItem('recent_tasks') || '[]'
+  );
+  const updated = [task,
+    ...recent.filter(t => t._id !== task._id)
+  ].slice(0, 3);
+  localStorage.setItem('recent_tasks', JSON.stringify(updated));
+  setRecentTasks(updated);
+  setSelectedTask(task);
+};
 
 const [isCreatingFirstTask, setIsCreatingFirstTask] = useState(false);
 
@@ -251,6 +271,22 @@ beta
 
 </div>
 
+{recentTasks.length > 0 && (
+  <div className="flex items-center gap-1.5 ml-4">
+    <span className="text-xs text-[#888]" title="Recently viewed tasks">🕐</span>
+    {recentTasks.map((task) => (
+      <button
+        key={task._id}
+        onClick={() => handleSelectTask(task)}
+        className="text-xs bg-[#2a2a2f] hover:bg-[#3a3a40] text-[#e0e0e0] border border-[#444] px-2.5 py-0.5 rounded-full truncate max-w-[120px] transition"
+        title={task.title}
+      >
+        {task.title}
+      </button>
+    ))}
+  </div>
+)}
+
 
 </div>
 
@@ -454,7 +490,7 @@ className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg"
 
 <KanbanBoard 
 tasks={filteredTasks}
-onSelectTask={setSelectedTask}
+onSelectTask={handleSelectTask}
 activeCol={activeCol}
 />
 
