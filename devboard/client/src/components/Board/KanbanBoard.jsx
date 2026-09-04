@@ -191,7 +191,7 @@ const KanbanBoard = ({ tasks: filteredTasks, onSelectTask, activeCol, priorityFi
     <>
       {showinput && (
         <div
-          className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center"
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={handleCancel}
           onKeyDown={(e) => {
             if (e.key === 'Escape') handleCancel();
