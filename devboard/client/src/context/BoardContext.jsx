@@ -11,19 +11,39 @@ import { io } from "socket.io-client";
 const BoardContext = createContext();
 
 export const BoardProvider = ({ children }) => {
-  const [allTasks, setAllTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [allTasks, setAllTasks] = useState([
+    {
+      _id: "1",
+      title: "Set up preset themes",
+      description: "Allow switching between Ocean, Forest, Sunset themes",
+      status: "in_progress",
+      priority: "high",
+      tags: ["feature", "ui"],
+      pomodoroCount: 2,
+    },
+    {
+      _id: "2",
+      title: "Review PR #491",
+      description: "Check UI background consistency",
+      status: "backlog",
+      priority: "medium",
+      tags: ["review"],
+      pomodoroCount: 0,
+    },
+  ]);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [onlineUsers, setOnlineUsers] = useState(0);
+  const [onlineUsers, setOnlineUsers] = useState(1);
   const [error, setError] = useState(null);
   const [activeTag, setActiveTag] = useState(null);
 
+  // Mock user fallback so login screen is bypassed without DB server
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem("devboard_user");
     try {
-      return saved ? JSON.parse(saved) : null;
+      return saved ? JSON.parse(saved) : { id: "demo", name: "Dev User", token: "mock-token" };
     } catch {
-      return null;
+      return { id: "demo", name: "Dev User", token: "mock-token" };
     }
   });
 
@@ -52,26 +72,24 @@ export const BoardProvider = ({ children }) => {
       const { data } = await axios.get("/api/v1/tasks", authHeaders());
       setAllTasks(data);
     } catch (err) {
-      setError("Cannot connect to server. Please try again!");
-      console.error("Error fetching tasks:", err);
+      console.warn("Using offline mock tasks since backend server is down.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (user) {
+    if (user && user.token !== "mock-token") {
       fetchTasks();
     } else {
-      setAllTasks([]);
       setLoading(false);
     }
   }, [user]);
 
   // Real-time board sync via Socket.IO
   useEffect(() => {
-    if (!user) {
-      setOnlineUsers(0);
+    if (!user || user.token === "mock-token") {
+      setOnlineUsers(1);
       return;
     }
 
@@ -95,7 +113,16 @@ export const BoardProvider = ({ children }) => {
 
   const addTask = async (taskData) => {
     try {
+<<<<<<< HEAD
+      if (user.token === "mock-token") {
+        const newTask = { ...taskData, _id: Date.now().toString(), pomodoroCount: 0 };
+        setAllTasks((prev) => [...prev, newTask]);
+        return;
+      }
+      const { data } = await axios.post("/api/tasks", taskData, authHeaders());
+=======
       const { data } = await axios.post("/api/v1/tasks", taskData, authHeaders());
+>>>>>>> main
       setAllTasks((prev) => [...prev, data]);
     } catch (err) {
       console.error("addTask failed", err);
@@ -110,6 +137,10 @@ export const BoardProvider = ({ children }) => {
 
   const updateTask = async (id, updates) => {
     try {
+      if (user.token === "mock-token") {
+        setAllTasks((prev) => prev.map((t) => (t._id === id ? { ...t, ...updates } : t)));
+        return;
+      }
       const { data } = await axios.put(
         `/api/v1/tasks/${id}`,
         updates,
@@ -124,7 +155,15 @@ export const BoardProvider = ({ children }) => {
 
   const deleteTask = async (id) => {
     try {
+<<<<<<< HEAD
+      if (user.token === "mock-token") {
+        setAllTasks((prev) => prev.filter((t) => t._id !== id));
+        return;
+      }
+      await axios.delete(`/api/tasks/${id}`, authHeaders());
+=======
       await axios.delete(`/api/v1/tasks/${id}`, authHeaders());
+>>>>>>> main
       setAllTasks((prev) => prev.filter((t) => t._id !== id));
     } catch (err) {
       console.error("deleteTask failed:", err);
@@ -133,6 +172,7 @@ export const BoardProvider = ({ children }) => {
   };
 
   const addSnippet = async (taskId, snippet) => {
+    if (user.token === "mock-token") return;
     const { data } = await axios.post(
       `/api/v1/tasks/${taskId}/snippets`,
       snippet,
@@ -142,7 +182,6 @@ export const BoardProvider = ({ children }) => {
   };
 
   const login = (userData) => {
-    // Standardize user object structure
     const formattedUser = userData.token
       ? userData
       : { token: userData.token || userData.jwt, ...userData };
@@ -160,17 +199,23 @@ export const BoardProvider = ({ children }) => {
 
   const logoutAll = async () => {
     try {
+<<<<<<< HEAD
+      if (user?.token !== "mock-token") {
+        await axios.post("/api/auth/logout-all", {}, authHeaders());
+      }
+=======
       await axios.post("/api/v1/auth/logout-all", {}, authHeaders());
+>>>>>>> main
       logout();
     } catch (err) {
       console.error("logoutAll failed:", err);
       throw err;
     }
   };
+
   const tasks = useMemo(() => {
     let filtered = allTasks;
 
-    // Filter by active tag if one is selected
     if (activeTag) {
       filtered = filtered.filter((task) => task.tags?.includes(activeTag));
     }

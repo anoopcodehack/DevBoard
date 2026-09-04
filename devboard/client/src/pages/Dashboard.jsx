@@ -17,6 +17,14 @@ const isNightTime = () => {
   return hour >= 18 || hour < 6;
 };
 
+const THEMES = {
+  purple: { name: "Purple", accent: "#7F77DD", bg: "#0f0f10" },
+  ocean:  { name: "Ocean",  accent: "#2980B9", bg: "#0a0f14" },
+  forest: { name: "Forest", accent: "#27AE60", bg: "#0a110a" },
+  sunset: { name: "Sunset", accent: "#E67E22", bg: "#140a0a" },
+  gold:   { name: "Gold",   accent: "#F39C12", bg: "#111009" },
+};
+
 const Dashboard = () => {
   const {
     user,
@@ -42,9 +50,59 @@ const Dashboard = () => {
   const [focusMode, setFocusMode] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+<<<<<<< HEAD
+  const [isCreatingFirstTask, setIsCreatingFirstTask] = useState(false);
+  const [showTop, setShowTop] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isNight, setIsNight] = useState(isNightTime());
+
+  const [theme, setTheme] = useState(
+    () => JSON.parse(localStorage.getItem("board_theme")) || "purple"
+  );
+
+  const [customColors, setCustomColors] = useState(() => {
+    try {
+      return (
+        JSON.parse(localStorage.getItem("board_custom_theme")) || {
+          accent: "#9B51E0",
+          bg: "#121212",
+        }
+      );
+    } catch {
+      return { accent: "#9B51E0", bg: "#121212" };
+    }
+  });
+
+  const activeTheme =
+    theme === "custom"
+      ? { name: "Custom", ...customColors }
+      : THEMES[theme] || THEMES.purple;
+
+  useEffect(() => {
+    document.body.style.backgroundColor = activeTheme.bg;
+    document.documentElement.style.backgroundColor = activeTheme.bg;
+
+    document.documentElement.style.setProperty("--accent", activeTheme.accent);
+    document.documentElement.style.setProperty("--bg", activeTheme.bg);
+    document.documentElement.style.setProperty("--bg-primary", activeTheme.bg);
+    document.documentElement.style.setProperty("--bg-card", activeTheme.bg);
+
+    localStorage.setItem("board_theme", JSON.stringify(theme));
+  }, [theme, activeTheme]);
+
+  const handleCustomColorChange = (key, value) => {
+    const updated = { ...customColors, [key]: value };
+    setCustomColors(updated);
+    localStorage.setItem("board_custom_theme", JSON.stringify(updated));
+    setTheme("custom");
+  };
+
+  const [searchHistory, setSearchHistory] = useState(() => {
+=======
 
   // Recently viewed tasks
   const [recentTasks, setRecentTasks] = useState(() => {
+>>>>>>> main
     try {
       const saved = JSON.parse(
         localStorage.getItem("recent_tasks") || "[]"
@@ -55,6 +113,8 @@ const Dashboard = () => {
     }
   });
 
+<<<<<<< HEAD
+=======
   const [isCreatingFirstTask, setIsCreatingFirstTask] = useState(false);
   const [showTop, setShowTop] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -71,6 +131,7 @@ const Dashboard = () => {
     }
   });
 
+>>>>>>> main
   useEffect(() => {
     const interval = setInterval(() => {
       setIsNight(isNightTime());
@@ -79,10 +140,13 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+<<<<<<< HEAD
+=======
   useEffect(() => {
     document.documentElement.classList.toggle("light", !isNight);
   }, [isNight]);
 
+>>>>>>> main
   useEffect(() => {
     const handleScroll = (event) => {
       let scrollTop = 0;
@@ -156,7 +220,10 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex gap-4 p-4">
+      <div
+        className="flex gap-4 p-4 min-h-screen"
+        style={{ backgroundColor: activeTheme.bg }}
+      >
         {[1, 2, 3, 4].map((col) => (
           <div key={col} className="flex flex-col w-56 gap-2">
             {[1, 2, 3].map((card) => (
@@ -227,18 +294,15 @@ const Dashboard = () => {
     window.print();
   };
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-
-    if (hour < 12) return "🌅 Good morning";
-    if (hour < 17) return "🌞 Good afternoon";
-    return "🌙 Good evening";
-  };
-
   return (
-    <div className="flex flex-col h-screen bg-[var(--bg-primary)]">
-      {/* Top Navbar */}
-      <div className="flex flex-col gap-3 px-5 py-3 bg-[var(--bg-card)] border-b border-[var(--border-primary)] md:flex-row md:items-center md:justify-between">
+    <div
+      className="flex flex-col h-screen transition-colors duration-300"
+      style={{ backgroundColor: activeTheme.bg }}
+    >
+      <div
+        className="flex flex-col gap-3 px-5 py-3 border-b border-[var(--border-primary)] md:flex-row md:items-center md:justify-between transition-colors duration-300"
+        style={{ backgroundColor: activeTheme.bg }}
+      >
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-lg">🗂️</span>
 
@@ -320,7 +384,10 @@ const Dashboard = () => {
             </div>
           )}
         </div>
+<<<<<<< HEAD
+=======
 
+>>>>>>> main
         <div className="flex items-center gap-3 no-print">
           <button
             type="button"
@@ -329,7 +396,10 @@ const Dashboard = () => {
           >
             🖨️ Print
           </button>
+<<<<<<< HEAD
+=======
 
+>>>>>>> main
           <a
             href="https://github.com/anoopcodehack/DevBoard"
             target="_blank"
@@ -356,6 +426,12 @@ const Dashboard = () => {
               {isFullscreen ? "⊠ Exit" : "⛶ Focus"}
             </button>
           )}
+<<<<<<< HEAD
+          <button
+            type="button"
+            onClick={() => setFocusMode((v) => !v)}
+            aria-label={focusMode ? "Disable focus mode" : "Enable focus mode"}
+=======
 
           {/* <span className="text-xs text-[var(--text-secondary)]">
             👋 {getGreeting()},{user?.name}
@@ -367,6 +443,7 @@ const Dashboard = () => {
             aria-label={
               focusMode ? "Disable focus mode" : "Enable focus mode"
             }
+>>>>>>> main
             className={`text-xs px-3 py-1.5 rounded-lg border transition ${
               focusMode
                 ? "border-purple-500 text-purple-400 bg-purple-500/10"
@@ -403,6 +480,51 @@ const Dashboard = () => {
             {isNight ? "🌙 Night mode" : "☀️ Day mode"}
           </span>
 
+<<<<<<< HEAD
+          <div className="flex items-center gap-1.5 ml-1 border-l border-[var(--border-primary)] pl-2">
+            {Object.entries(THEMES).map(([name, t]) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => setTheme(name)}
+                style={{ background: t.accent }}
+                title={`${name.charAt(0).toUpperCase() + name.slice(1)} theme`}
+                className={`w-4 h-4 rounded-full transition transform hover:scale-110 ${
+                  theme === name ? "ring-2 ring-white scale-110" : "opacity-80"
+                }`}
+              />
+            ))}
+
+            <label
+              title="Custom Accent Color"
+              className={`cursor-pointer flex items-center rounded-full p-0.5 transition ${
+                theme === "custom" ? "ring-2 ring-white" : ""
+              }`}
+            >
+              <input
+                type="color"
+                value={customColors.accent}
+                onChange={(e) => handleCustomColorChange("accent", e.target.value)}
+                className="w-4 h-4 rounded-full border-0 p-0 cursor-pointer bg-transparent opacity-80 hover:opacity-100"
+              />
+            </label>
+            <label
+              title="Custom Background Color"
+              className={`cursor-pointer flex items-center rounded-full p-0.5 transition ${
+                theme === "custom" ? "ring-2 ring-white" : ""
+              }`}
+            >
+              <input
+                type="color"
+                value={customColors.bg}
+                onChange={(e) => handleCustomColorChange("bg", e.target.value)}
+                className="w-4 h-4 rounded-full border border-white/40 p-0 cursor-pointer bg-transparent opacity-80 hover:opacity-100"
+              />
+            </label>
+          </div>
+
+=======
+>>>>>>> main
           <button
             onClick={handleLogout}
             className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition px-3 py-1.5 border border-[var(--border-primary)] rounded-lg"
@@ -412,12 +534,10 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Activity Heatmap */}
       <div className="no-print">
         <Heatmap />
       </div>
 
-      {/* Pomodoro Bar */}
       <div className="no-print">
         <PomodoroTimer
           activeTaskTitle={selectedTask?.title}
@@ -425,7 +545,10 @@ const Dashboard = () => {
         />
       </div>
 
+<<<<<<< HEAD
+=======
       {/* Kanban Board */}
+>>>>>>> main
       <div className="flex-1 overflow-hidden">
         {tasks.length === 0 ? (
           <div className="flex-1 h-full flex flex-col items-center justify-center text-center p-8">
@@ -442,7 +565,8 @@ const Dashboard = () => {
 
             <button
               onClick={() => setIsCreatingFirstTask(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg font-medium transition"
+              style={{ backgroundColor: activeTheme.accent }}
+              className="text-white px-6 py-2.5 rounded-lg font-medium transition hover:brightness-110"
             >
               + Add your first card
             </button>
@@ -455,7 +579,10 @@ const Dashboard = () => {
         )}
       </div>
 
+<<<<<<< HEAD
+=======
       {/* Task Edit Modal */}
+>>>>>>> main
       {selectedTask && (
         <TaskModal
           mode="edit"
@@ -469,7 +596,10 @@ const Dashboard = () => {
         />
       )}
 
+<<<<<<< HEAD
+=======
       {/* Create First Task Modal */}
+>>>>>>> main
       {isCreatingFirstTask && (
         <TaskModal
           mode="create"
@@ -482,7 +612,10 @@ const Dashboard = () => {
         />
       )}
 
+<<<<<<< HEAD
+=======
       {/* Scroll To Top Button */}
+>>>>>>> main
       {showTop && (
         <button
           onClick={() => {
@@ -499,14 +632,18 @@ const Dashboard = () => {
               });
             });
           }}
-          className="no-print fixed bottom-6 right-6 bg-purple-600 hover:bg-purple-500 text-white rounded-full w-10 h-10 text-lg shadow-lg transition z-50 flex items-center justify-center"
+          style={{ backgroundColor: activeTheme.accent }}
+          className="no-print fixed bottom-6 right-6 text-white rounded-full w-10 h-10 text-lg shadow-lg transition z-50 flex items-center justify-center hover:brightness-110"
           aria-label="Scroll to top"
         >
           ⬆️
         </button>
       )}
 
+<<<<<<< HEAD
+=======
       {/* Help Modal */}
+>>>>>>> main
       {showHelp && (
         <div
           className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -569,4 +706,8 @@ const Dashboard = () => {
   );
 };
 
+<<<<<<< HEAD
 export default Dashboard;
+=======
+export default Dashboard;
+>>>>>>> main
