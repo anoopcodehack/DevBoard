@@ -11,7 +11,7 @@ const handleSuggestTags = async (e) => {
 
 
     try{
-        const { data } = await axios.post("/api/ai/suggest-tags", {
+        const { data } = await axios.post("/api/v1/ai/suggest-tags", {
                 code: task.snippets[selectedSnippet].code,
         });
 

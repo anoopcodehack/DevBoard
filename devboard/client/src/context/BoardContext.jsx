@@ -69,7 +69,7 @@ export const BoardProvider = ({ children }) => {
 
     try {
       setLoading(true);
-      const { data } = await axios.get("/api/tasks", authHeaders());
+      const { data } = await axios.get("/api/v1/tasks", authHeaders());
       setAllTasks(data);
     } catch (err) {
       console.warn("Using offline mock tasks since backend server is down.");
@@ -113,12 +113,16 @@ export const BoardProvider = ({ children }) => {
 
   const addTask = async (taskData) => {
     try {
+<<<<<<< HEAD
       if (user.token === "mock-token") {
         const newTask = { ...taskData, _id: Date.now().toString(), pomodoroCount: 0 };
         setAllTasks((prev) => [...prev, newTask]);
         return;
       }
       const { data } = await axios.post("/api/tasks", taskData, authHeaders());
+=======
+      const { data } = await axios.post("/api/v1/tasks", taskData, authHeaders());
+>>>>>>> main
       setAllTasks((prev) => [...prev, data]);
     } catch (err) {
       console.error("addTask failed", err);
@@ -138,7 +142,7 @@ export const BoardProvider = ({ children }) => {
         return;
       }
       const { data } = await axios.put(
-        `/api/tasks/${id}`,
+        `/api/v1/tasks/${id}`,
         updates,
         authHeaders(),
       );
@@ -151,11 +155,15 @@ export const BoardProvider = ({ children }) => {
 
   const deleteTask = async (id) => {
     try {
+<<<<<<< HEAD
       if (user.token === "mock-token") {
         setAllTasks((prev) => prev.filter((t) => t._id !== id));
         return;
       }
       await axios.delete(`/api/tasks/${id}`, authHeaders());
+=======
+      await axios.delete(`/api/v1/tasks/${id}`, authHeaders());
+>>>>>>> main
       setAllTasks((prev) => prev.filter((t) => t._id !== id));
     } catch (err) {
       console.error("deleteTask failed:", err);
@@ -166,7 +174,7 @@ export const BoardProvider = ({ children }) => {
   const addSnippet = async (taskId, snippet) => {
     if (user.token === "mock-token") return;
     const { data } = await axios.post(
-      `/api/tasks/${taskId}/snippets`,
+      `/api/v1/tasks/${taskId}/snippets`,
       snippet,
       authHeaders(),
     );
@@ -191,9 +199,13 @@ export const BoardProvider = ({ children }) => {
 
   const logoutAll = async () => {
     try {
+<<<<<<< HEAD
       if (user?.token !== "mock-token") {
         await axios.post("/api/auth/logout-all", {}, authHeaders());
       }
+=======
+      await axios.post("/api/v1/auth/logout-all", {}, authHeaders());
+>>>>>>> main
       logout();
     } catch (err) {
       console.error("logoutAll failed:", err);

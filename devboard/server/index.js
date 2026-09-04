@@ -7,6 +7,7 @@ const morgan = require("morgan");
 const dotenv = require("dotenv");
 const { rateLimit } = require("express-rate-limit");
 const { Server } = require("socket.io");
+const {API_VERSION} = require("./config/constants")
 
 dotenv.config();
 
@@ -51,13 +52,13 @@ app.use(express.json());
 app.use(limiter);
 
 // Routes
-app.use("/api/auth", require("./routes/auth"));
-app.use("/api/tasks", require("./routes/tasks"));
-app.use("/api/github", require("./routes/github"));
-app.use("/api/ai", require("./routes/ai"));
+app.use(`${API_VERSION}/auth`, require("./routes/auth"));
+app.use(`${API_VERSION}/tasks`, require("./routes/tasks"));
+app.use(`${API_VERSION}/github`, require("./routes/github"));
+app.use(`${API_VERSION}/ai`, require("./routes/ai"));
 
 // Health check — no auth required
-app.get("/api/health", (req, res) => {
+app.get(`${API_VERSION}/health`, (req, res) => {
   const mem = process.memoryUsage();
   res.json({
     status: "ok",

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { useBoard } from "../../context/BoardContext";
+import { QRCodeSVG } from "qrcode.react";
 
 const TITLE_MAX_LENGTH = 100;
 const COPY_SUFFIX = " (copy)";
@@ -38,6 +39,8 @@ const TaskModal = ({
 
   const [form, setForm] = useState(initialForm);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const taskShareUrl = task ? `${window.location.origin}/task/${task._id}` : "";
 
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const [snippetCode, setSnippetCode] = useState("");
@@ -71,7 +74,7 @@ const TaskModal = ({
     setAiError("");
 
     try {
-      const res = await fetch("/api/ai/generate-description", {
+      const res = await fetch("/api/v1/ai/generate-description", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -467,6 +470,7 @@ const TaskModal = ({
               );
             })}
         </div>
+        {task && showQR && <div className="flex flex-col items-center gap-2 rounded-lg bg-white p-4"><QRCodeSVG value={taskShareUrl} size={160} /><p className="text-xs text-gray-700">Scan to open task</p></div>}
         </div>
 
         <div className="flex items-center justify-between gap-2 px-5 py-4 border-t border-[var(--border-primary)]">
@@ -490,6 +494,9 @@ const TaskModal = ({
                 📄
               </button>
             )}
+            {task && <button
+             type="button" onClick={() => setShowQR((value) => !value)} title={showQR ? "Hide QR code" : "Show QR code"} className="p-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/5 rounded-lg transition"
+             >📱</button>}
             {task && (
               <button
                 onClick={() => {
