@@ -111,6 +111,7 @@ const TaskCard = ({
   const cardRef = useRef(null);
   const { activeTag, setActiveTag, updateTask, deleteTask, addTask, searchQuery } = useBoard();
   const { suggestedTags, loadingTags, handleSuggestTags, handleAddTag } = useSuggestTags(task, selectedSnippet, updateTask);
+  const [showPreview, setShowPreview] = useState(false)
 
   // TODO: connect isDark to ThemeContext when light mode is implemented
   const isDark = true;
@@ -255,6 +256,24 @@ const actualPomodoros = task.pomodoroCount || 0;
               {pinned ? "📌" : "📍"}
             </button>
           </div>
+          
+          {/* Description */}
+          {task.description && (
+            <div
+              onMouseEnter={() => setShowPreview(true)}
+              onMouseLeave={() => setShowPreview(false)}
+              className="text-[10px] text-[#555] hover:text-[#888]"
+            >
+              💬 preview
+
+              {showPreview && (
+                <div>
+                  {task.description.slice(0, 100)}
+                  {task.description.length > 100 && "..."}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* GitHub issue link */}
           {task.githubIssueUrl && (
