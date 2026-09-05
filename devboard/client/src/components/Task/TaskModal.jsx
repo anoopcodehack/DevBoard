@@ -15,7 +15,7 @@ const COLORS = [
   "#E74C3C",
   "",
 ];
-const EMOJIS = ['👍', '🔥', '😅', '💀', '✅'];
+const EMOJIS = ["👍", "🔥", "😅", "💀", "✅"];
 
 const TaskModal = ({
   task,
@@ -41,8 +41,13 @@ const TaskModal = ({
   const [confirmClose, setConfirmClose] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const taskShareUrl = task ? `${window.location.origin}/task/${task._id}` : "";
-
+  const { deleteTask, addTask, allTasks } = useBoard();
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
+  const isDuplicate = allTasks.some(
+    (t) =>
+      t.title?.toLowerCase().trim() === form.title.toLowerCase().trim() &&
+      t._id !== task?._id,
+  );
   const [snippetCode, setSnippetCode] = useState("");
   const [snippetLang, setSnippetLang] = useState("javascript");
   const [loading, setLoading] = useState(false);
@@ -51,7 +56,6 @@ const TaskModal = ({
   // AI Loading & Error States
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiError, setAiError] = useState("");
-  const { deleteTask, addTask } = useBoard();
   const [duplicating, setDuplicating] = useState(false);
 
   useEffect(() => {
@@ -201,29 +205,29 @@ const TaskModal = ({
     }
   };
   const handleReact = async (emoji) => {
-  if (!task) {
-    toast.error("No task to react to");
-    return;
-  }
-  try {
-    // TODO: sending a request to the server to update the reactions
-    // Example: await updateTask(task._id, { emoji });
-    console.log('React to', emoji);
-  } catch (err) {
-    console.error('Failed to react', err);
-  }
-};
+    if (!task) {
+      toast.error("No task to react to");
+      return;
+    }
+    try {
+      // TODO: sending a request to the server to update the reactions
+      // Example: await updateTask(task._id, { emoji });
+      console.log("React to", emoji);
+    } catch (err) {
+      console.error("Failed to react", err);
+    }
+  };
 
   const timeAgo = (date) => {
-  const diff = Date.now() - new Date(date);
-  const mins = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  return `${days}d ago`;
-};
+    const diff = Date.now() - new Date(date);
+    const mins = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
+  };
 
   return (
     <div
@@ -258,14 +262,21 @@ const TaskModal = ({
             }}
             className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-purple-500"
           />
-          <div className="text-xs text-[var(--text-muted)]] text-right -mt-2">
+          <div className="text-xs text-[var(--text-muted)] text-right -mt-2">
             {form.title.length}/{TITLE_MAX_LENGTH}
           </div>
+          {isDuplicate && (
+            <p className="text-xs text-red-400 -mt-2">
+              A task with this title already exists!
+            </p>
+          )}
 
           {/* Description Section with ✨ AI Button */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs text-[var(--text-secondary)]">Description</label>
+              <label className="text-xs text-[var(--text-secondary)]">
+                Description
+              </label>
               <button
                 type="button"
                 onClick={handleGenerateAI}
@@ -387,26 +398,37 @@ const TaskModal = ({
             </div>
           ))}
 
-           {/* Activity Log */}
+          {/* Activity Log */}
           {task?.activity?.length > 0 && (
             <div className="border border-[var(--border-primary)] rounded-lg px-3 py-2">
-              <span className="text-xs text-[var(--text-secondary)] block mb-1.5">📜 Recent activity</span>
+              <span className="text-xs text-[var(--text-secondary)] block mb-1.5">
+                📜 Recent activity
+              </span>
               <ul className="flex flex-col gap-1">
-                {task.activity.slice(-3).reverse().map((a, i) => (
-                  <li key={i} className="text-xs text-[var(--text-muted)] flex justify-between">
-                    <span>{a.action}</span>
-                    <span className="text-[var(--text-secondary)]">{timeAgo(a.timestamp)}</span>
-                  </li>
-                ))}
+                {task.activity
+                  .slice(-3)
+                  .reverse()
+                  .map((a, i) => (
+                    <li
+                      key={i}
+                      className="text-xs text-[var(--text-muted)] flex justify-between"
+                    >
+                      <span>{a.action}</span>
+                      <span className="text-[var(--text-secondary)]">
+                        {timeAgo(a.timestamp)}
+                      </span>
+                    </li>
+                  ))}
               </ul>
             </div>
           )}
 
-
           {/* Add Code Snippet */}
           <div className="border border-[var(--border-primary)] rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 bg-[var(--bg-primary)] border-b border-[var(--border-primary)]">
-              <span className="text-xs text-[var(--text-secondary)]">{"</>"} Code Snippet</span>
+              <span className="text-xs text-[var(--text-secondary)]">
+                {"</>"} Code Snippet
+              </span>
               <select
                 value={snippetLang}
                 onChange={(e) => setSnippetLang(e.target.value)}
@@ -442,9 +464,9 @@ const TaskModal = ({
             onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
             className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-purple-500"
           />
-          
+
           <select
-            value={form.estimate || ''}
+            value={form.estimate || ""}
             onChange={(e) => setForm({ ...form, estimate: e.target.value })}
             className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-purple-500"
           >
@@ -456,7 +478,9 @@ const TaskModal = ({
             <option value="1d">1 day</option>
           </select>
           <div className="flex items-center gap-1 border-t border-[var(--border-primary)] pt-3 mt-2">
-            <span className="text-xs text-[var(--text-secondary)] mr-1">Reactions:</span>
+            <span className="text-xs text-[var(--text-secondary)] mr-1">
+              Reactions:
+            </span>
             {EMOJIS.map((emoji) => {
               const reaction = task?.reactions?.find((r) => r.emoji === emoji);
               return (
@@ -465,12 +489,17 @@ const TaskModal = ({
                   onClick={() => handleReact(emoji)}
                   className="text-xs px-2 py-1 rounded-full bg-[#2a2a2f] hover:bg-[#333] transition"
                 >
-                  {emoji} {reaction?.count || ''}
+                  {emoji} {reaction?.count || ""}
                 </button>
               );
             })}
-        </div>
-        {task && showQR && <div className="flex flex-col items-center gap-2 rounded-lg bg-white p-4"><QRCodeSVG value={taskShareUrl} size={160} /><p className="text-xs text-gray-700">Scan to open task</p></div>}
+          </div>
+          {task && showQR && (
+            <div className="flex flex-col items-center gap-2 rounded-lg bg-white p-4">
+              <QRCodeSVG value={taskShareUrl} size={160} />
+              <p className="text-xs text-gray-700">Scan to open task</p>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-2 px-5 py-4 border-t border-[var(--border-primary)]">
@@ -494,9 +523,16 @@ const TaskModal = ({
                 📄
               </button>
             )}
-            {task && <button
-             type="button" onClick={() => setShowQR((value) => !value)} title={showQR ? "Hide QR code" : "Show QR code"} className="p-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/5 rounded-lg transition"
-             >📱</button>}
+            {task && (
+              <button
+                type="button"
+                onClick={() => setShowQR((value) => !value)}
+                title={showQR ? "Hide QR code" : "Show QR code"}
+                className="p-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/5 rounded-lg transition"
+              >
+                📱
+              </button>
+            )}
             {task && (
               <button
                 onClick={() => {
@@ -514,50 +550,52 @@ const TaskModal = ({
           </div>
 
           <div className="flex items-center flex-wrap justify-end gap-2">
-          <button
-            onClick={handleClose}
-            className="shrink-0 whitespace-nowrap px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
-          >
-            Cancel
-          </button>
-          {confirmDelete ? (
-            <div className="shrink-0 flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-lg pl-3 pr-1.5 py-1.5">
-              <span className="text-xs text-[var(--text-secondary)] whitespace-nowrap">You sure? 👀</span>
-              <button
-                onClick={async () => {
-                  await deleteTask(task._id);
-                  onClose();
-                }}
-                className="text-xs font-bold text-red-400 hover:text-white hover:bg-red-500 px-2 py-1 rounded-md transition whitespace-nowrap"
-              >
-                yes slay 💀
-              </button>
-              <button
-                onClick={() => setConfirmDelete(false)}
-                className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/5 px-2 py-1 rounded-md transition whitespace-nowrap"
-              >
-                nvm
-              </button>
-            </div>
-          ) : (
             <button
-              onClick={() => setConfirmDelete(true)}
-              className="shrink-0 whitespace-nowrap px-4 py-2 text-sm text-red-400 hover:text-red-300 transition"
+              onClick={handleClose}
+              className="shrink-0 whitespace-nowrap px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
             >
-              Delete
+              Cancel
             </button>
-          )}
-          <button
-            onClick={handleSave}
-            disabled={loading || !form.title.trim()}
-            className="shrink-0 whitespace-nowrap px-5 py-2 text-sm bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium transition disabled:opacity-40"
-          >
-            {loading
-              ? "Saving..."
-              : mode === "create"
-                ? "Create Task"
-                : "Save Changes"}
-          </button>
+            {confirmDelete ? (
+              <div className="shrink-0 flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-lg pl-3 pr-1.5 py-1.5">
+                <span className="text-xs text-[var(--text-secondary)] whitespace-nowrap">
+                  You sure? 👀
+                </span>
+                <button
+                  onClick={async () => {
+                    await deleteTask(task._id);
+                    onClose();
+                  }}
+                  className="text-xs font-bold text-red-400 hover:text-white hover:bg-red-500 px-2 py-1 rounded-md transition whitespace-nowrap"
+                >
+                  yes slay 💀
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/5 px-2 py-1 rounded-md transition whitespace-nowrap"
+                >
+                  nvm
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="shrink-0 whitespace-nowrap px-4 py-2 text-sm text-red-400 hover:text-red-300 transition"
+              >
+                Delete
+              </button>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={loading || !form.title.trim() || isDuplicate}
+              className="shrink-0 whitespace-nowrap px-5 py-2 text-sm bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium transition disabled:opacity-40"
+            >
+              {loading
+                ? "Saving..."
+                : mode === "create"
+                  ? "Create Task"
+                  : "Save Changes"}
+            </button>
           </div>
         </div>
       </div>
