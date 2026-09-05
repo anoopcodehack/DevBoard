@@ -21,6 +21,18 @@ DevBoard is a task board made for how developers actually work — track issues,
 --
 <img width="893" height="608" alt="Screenshot 2026-06-06 095817" src="https://github.com/user-attachments/assets/a3ee8e4e-026b-4f8f-be2e-d0a2f436810c" />
 <img width="893" height="608" alt="DevBoard screenshot" src="./docs/screenshot.png" />
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `N` | Create a new task |
+| `Esc` | Close the open modal |
+
+> `N` is disabled while typing in an input or textarea, so it won't interrupt you mid-sentence.
+
 ---
  
 ## 🛠️ Tech Stack
