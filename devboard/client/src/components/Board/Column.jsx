@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Droppable } from "@hello-pangea/dnd";
 import TaskCard from "./TaskCard";
 import { useBoard } from "../../context/BoardContext";
@@ -24,7 +24,10 @@ const Column = ({
   isActive,
   columns = [],
 }) => {
-  const { tasks: allTasks, updateTask } = useBoard();
+  // `tasks` from the context is already filtered by search and tag, so the
+  // local name allTasks below promises more than it holds. The snippet count
+  // needs the unfiltered set, otherwise it drops while you type in the search.
+  const { tasks: allTasks, allTasks: unfilteredTasks, updateTask } = useBoard();
 
   const [sorted, setSorted] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -140,6 +143,16 @@ const Column = ({
       (pinnedIds.has(a._id) ? 1 : 0)
   );
 
+  // A property of the column, not of the current view: counted over every task
+  // with this status, whatever the search box and the priority filter say.
+  const totalSnippets = useMemo(
+    () =>
+      (unfilteredTasks || [])
+        .filter((task) => task.status === columnId)
+        .reduce((sum, task) => sum + (task.snippets?.length || 0), 0),
+    [unfilteredTasks, columnId],
+  );
+
   const config = COLUMN_CONFIG[columnId] || {
     label: columnId,
     dot: "bg-gray-500",
@@ -213,6 +226,16 @@ const Column = ({
               >
                 {tasks.length}
               </span>
+
+              {totalSnippets > 0 && (
+                <span
+                  title={`${totalSnippets} code snippet${totalSnippets === 1 ? "" : "s"} in this column`}
+                  className="text-[10px] text-[var(--text-secondary)] flex items-center gap-0.5"
+                >
+                  <span aria-hidden="true">{"</>"}</span>
+                  {totalSnippets}
+                </span>
+              )}
             </div>
           )}
         </div>
