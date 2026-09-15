@@ -4,6 +4,14 @@ import { useBoard } from "../../context/BoardContext";
 import { QRCodeSVG } from "qrcode.react";
 
 const TITLE_MAX_LENGTH = 100;
+// The AI generator asks Gemini for "2-3 sentences", which lands around 150 to
+// 400 characters. A budget has to hold that plus a note typed afterwards,
+// otherwise the field cuts off the text the button just produced.
+const DESCRIPTION_MAX_LENGTH = 500;
+// Where the counter starts warning. Kept as fractions so both follow the
+// budget above instead of drifting when it changes.
+const DESCRIPTION_WARN_AT = Math.round(DESCRIPTION_MAX_LENGTH * 0.8);
+const DESCRIPTION_ALERT_AT = Math.round(DESCRIPTION_MAX_LENGTH * 0.92);
 const COPY_SUFFIX = " (copy)";
 
 const COLORS = [
@@ -48,6 +56,14 @@ const TaskModal = ({
       t.title?.toLowerCase().trim() === form.title.toLowerCase().trim() &&
       t._id !== task?._id,
   );
+  // Both counters were computed inline before, the word count twice in a row:
+  // once for the number and once for the plural of "word".
+  const descriptionLength = form.description.length;
+  const descriptionWords = form.description
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+
   // Tags are stored the way they were typed, so the list keeps the first
   // spelling it sees and matches case insensitively: typing "rea" should still
   // find an existing "React" rather than nothing.
@@ -349,6 +365,7 @@ const TaskModal = ({
 
             <textarea
               placeholder="Description (optional) or generate with AI..."
+              maxLength={DESCRIPTION_MAX_LENGTH}
               value={form.description}
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
@@ -357,12 +374,23 @@ const TaskModal = ({
               className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] resize-none"
             />
 
-            <p className="text-[10px] text-[var(--text-secondary)] mt-1">
-              {form.description.trim().split(/\s+/).filter(Boolean).length} word
-              {form.description.trim().split(/\s+/).filter(Boolean).length !== 1
-                ? "s"
-                : ""}
-            </p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-[10px] text-[var(--text-secondary)]">
+                {descriptionWords} word{descriptionWords !== 1 ? "s" : ""}
+              </p>
+              <p
+                className={`text-[10px] transition-colors ${
+                  descriptionLength >= DESCRIPTION_ALERT_AT
+                    ? "text-red-400 font-medium"
+                    : descriptionLength >= DESCRIPTION_WARN_AT
+                      ? "text-yellow-400"
+                      : "text-[var(--text-muted)]"
+                }`}
+              >
+                {descriptionLength}/{DESCRIPTION_MAX_LENGTH}
+                {descriptionLength >= DESCRIPTION_ALERT_AT && " almost full"}
+              </p>
+            </div>
 
             {aiError && <p className="text-xs text-red-400 mt-1">{aiError}</p>}
           </div>
