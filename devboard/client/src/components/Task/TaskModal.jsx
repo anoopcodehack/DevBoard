@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { toast } from "react-toastify";
 import { useBoard } from "../../context/BoardContext";
 import { QRCodeSVG } from "qrcode.react";
@@ -114,15 +114,24 @@ const TaskModal = ({
   const [aiError, setAiError] = useState("");
   const [duplicating, setDuplicating] = useState(false);
 
+  const handleClose = useCallback(() => {
+    if (isDirty) {
+      setConfirmClose(true);
+    } else {
+      onClose();
+    }
+  }, [isDirty, onClose]);
+
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === "Escape") {
-        onClose();
+        handleClose();
       }
     };
+
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, []);
+  }, [handleClose]);
 
   const handleGenerateAI = async () => {
     if (!form.title.trim()) {
@@ -271,14 +280,6 @@ const TaskModal = ({
     );
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-  };
-
-  const handleClose = () => {
-    if (isDirty) {
-      setConfirmClose(true);
-    } else {
-      onClose();
-    }
   };
   const handleReact = async (emoji) => {
     if (!task) {
