@@ -111,7 +111,36 @@ const TaskCard = ({
   const cardRef = useRef(null);
   const { activeTag, setActiveTag, updateTask, deleteTask, addTask, searchQuery } = useBoard();
   const { suggestedTags, loadingTags, handleSuggestTags, handleAddTag } = useSuggestTags(task, selectedSnippet, updateTask);
-  const [showPreview, setShowPreview] = useState(false)
+  const [showPreview, setShowPreview] = useState(false);
+
+  // ── Time tracker ──────────────────────────────────────────
+  const [elapsed, setElapsed] = useState(0);
+  const [tracking, setTracking] = useState(false);
+  const intervalRef = useRef(null);
+
+  const toggleTimer = (e) => {
+    e.stopPropagation();
+    if (tracking) {
+      clearInterval(intervalRef.current);
+    } else {
+      intervalRef.current = setInterval(() => {
+        setElapsed((s) => s + 1);
+      }, 1000);
+    }
+    setTracking((t) => !t);
+  };
+
+  const formatTime = (s) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  };
+
+  // Clean up interval on unmount
+  useEffect(() => {
+    return () => clearInterval(intervalRef.current);
+  }, []);
 
   // TODO: connect isDark to ThemeContext when light mode is implemented
   const isDark = true;
@@ -471,6 +500,18 @@ const actualPomodoros = task.pomodoroCount || 0;
           {/* Footer */}
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2 text-[var(--text-muted)] text-[10px]">
+              {/* Time tracker */}
+              <button
+                onClick={toggleTimer}
+                title={tracking ? "Pause timer" : "Start timer"}
+                className={`font-mono transition-colors ${
+                  tracking
+                    ? "text-green-400 animate-pulse"
+                    : "text-[#555] hover:text-[#888]"
+                }`}
+              >
+                {tracking ? "⏸" : "▶"} {formatTime(elapsed)}
+              </button>
               {estimatedPomodoros && (
                 <span
                   className={
