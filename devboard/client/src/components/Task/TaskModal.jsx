@@ -113,6 +113,7 @@ const TaskModal = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiError, setAiError] = useState("");
   const [duplicating, setDuplicating] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
 
   const handleClose = useCallback(() => {
     if (isDirty) {
@@ -171,6 +172,27 @@ const TaskModal = ({
   const handleDeleteSnippet = async (indexToRemove) => {
     const updatedSnippets = task.snippets.filter((_, i) => i !== indexToRemove);
     await updateTask(task._id, { snippets: updatedSnippets });
+  };
+
+  // Copying snippets one by one gets tedious once a task carries a few of
+  // them. The header keeps each block apart so the result stays readable
+  // after pasting.
+  const handleCopyAllSnippets = async () => {
+    const snippets = task?.snippets || [];
+    const allCode = snippets
+      .map((s, i) => `// Snippet ${i + 1} (${s.language})\n${s.code}`)
+      .join("\n\n---\n\n");
+
+    try {
+      await navigator.clipboard.writeText(allCode);
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
+      toast.success(`${snippets.length} snippets copied to clipboard`);
+    } catch {
+      // The clipboard is refused without a secure context or permission.
+      // Saying "Copied all!" then would be a lie.
+      toast.error("Could not copy the snippets");
+    }
   };
 
   const handleExportJSON = () => {
@@ -486,6 +508,18 @@ const TaskModal = ({
           </div>
 
           {/* Existing Snippets */}
+          {task?.snippets?.length > 1 && (
+            <div className="flex justify-end mb-2">
+              <button
+                type="button"
+                onClick={handleCopyAllSnippets}
+                title="Copy every snippet of this task at once"
+                className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded"
+              >
+                {copiedAll ? "✅ Copied all!" : "📋 Copy all snippets"}
+              </button>
+            </div>
+          )}
           {task?.snippets?.map((snippet, index) => (
             <div
               key={index}
