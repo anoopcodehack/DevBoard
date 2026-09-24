@@ -44,17 +44,6 @@ const isNightTime = () => {
 };
 
 
-const handleInstallApp = async () => {
-  if (!deferredPrompt) return;
-
-  deferredPrompt.prompt(); // show the native install prompt
-  const { outcome } = await deferredPrompt.userChoice; // "accepted" | "dismissed"
-
-  console.log(`Install prompt outcome: ${outcome}`);
-
-  // The prompt can only be used once — clear it either way
-  setDeferredPrompt(null);
-};
 
 const THEMES = {
   purple: { name: "Purple", accent: "#7F77DD", bg: "#0f0f10" },
@@ -258,6 +247,19 @@ const Dashboard = () => {
     }
   };
 
+const myTasks = tasks.filter(
+  (t) => t.assignee?._id === user?._id
+);
+
+const completionRate =
+  myTasks.length > 0
+    ? Math.round(
+        (myTasks.filter((t) => t.status === "done").length /
+          myTasks.length) *
+          100
+      )
+    : 0;
+
   const handleLogoutAll = async () => {
     if (window.confirm("Are you sure you want to logout from all devices?")) {
       try {
@@ -428,7 +430,16 @@ const Dashboard = () => {
               ? `⭐ ${formatStars(stars)} Star on GitHub`
               : "⭐ Star on GitHub"}
           </a>
-          <span className="text-xs text-[var(--text-secondary)]">👋 {user?.name}</span>
+
+
+         <div
+  title={`${user?.name || "User"} • ${completionRate}% tasks completed`}
+  className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-semibold cursor-help"
+>
+  {user?.name?.[0]?.toUpperCase()}
+</div>
+
+
           {document.fullscreenEnabled && (
             <button
               onClick={handleFullscreen}
