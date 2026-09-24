@@ -153,6 +153,18 @@ const Column = ({
     [unfilteredTasks, columnId],
   );
 
+  // Same idea as the snippet count above: how many high and medium priority
+  // tasks sit in this column, regardless of what is currently filtered.
+  const priorities = useMemo(() => {
+    const inColumn = (unfilteredTasks || []).filter(
+      (task) => task.status === columnId,
+    );
+    return {
+      high: inColumn.filter((task) => task.priority === "high").length,
+      medium: inColumn.filter((task) => task.priority === "medium").length,
+    };
+  }, [unfilteredTasks, columnId]);
+
   const config = COLUMN_CONFIG[columnId] || {
     label: columnId,
     dot: "bg-gray-500",
@@ -226,6 +238,26 @@ const Column = ({
               >
                 {tasks.length}
               </span>
+
+              {priorities.high > 0 && (
+                <span
+                  title={`${priorities.high} high priority task${priorities.high === 1 ? "" : "s"} in this column`}
+                  className="text-[10px] text-[var(--text-secondary)] flex items-center gap-0.5"
+                >
+                  <span aria-hidden="true">🔴</span>
+                  {priorities.high}
+                </span>
+              )}
+
+              {priorities.medium > 0 && (
+                <span
+                  title={`${priorities.medium} medium priority task${priorities.medium === 1 ? "" : "s"} in this column`}
+                  className="text-[10px] text-[var(--text-secondary)] flex items-center gap-0.5"
+                >
+                  <span aria-hidden="true">🟡</span>
+                  {priorities.medium}
+                </span>
+              )}
 
               {totalSnippets > 0 && (
                 <span
