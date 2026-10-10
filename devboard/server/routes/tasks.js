@@ -115,6 +115,11 @@ router.delete("/:id", protect, async (req, res) => {
   try {
     const task = await Task.findByIdAndDelete(req.params.id);
     if (!task) return res.status(404).json({ message: "Task not found" });
+    // A deleted task can't block anything anymore
+    await Task.updateMany(
+      { blockedBy: task._id },
+      { $pull: { blockedBy: task._id } },
+    );
     res.json({ message: "Task deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });

@@ -56,16 +56,10 @@ const taskSchema = new mongoose.Schema(
         timestamp: { type: Date, default: Date.now },
       },
     ],
+    // Tasks that have to be finished before this one
+    blockedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "Task" }],
   },
   { timestamps: true },
-  {
-  blockedBy: [
-  {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Task",
-    default: [],
-  },
-],}
 );
 
 // GET /api/tasks returns every task sorted by order; without an index MongoDB
