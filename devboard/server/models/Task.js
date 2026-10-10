@@ -58,6 +58,14 @@ const taskSchema = new mongoose.Schema(
     ],
   },
   { timestamps: true },
+  {
+  blockedBy: [
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Task",
+    default: [],
+  },
+],}
 );
 
 // Normalize tags at the API boundary: trim whitespace, drop empties, dedupe.
