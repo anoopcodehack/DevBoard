@@ -9,6 +9,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from "../common/Icons";
+import confetti from "canvas-confetti";
 
 const COLUMN_CONFIG = {
   backlog: {
@@ -85,10 +86,24 @@ const Column = ({
     });
   };
 
-  const toggleSelectionMode = () => {
-    if (selectionMode) setSelectedIds(new Set());
-    setSelectionMode((value) => !value);
-  };
+const fireConfetti = () => {
+  confetti({
+    particleCount: 120,
+    spread: 70,
+    origin: { y: 0.65 },
+    colors: ["#22c55e", "#3b82f6", "#facc15", "#a78bfa"],
+  });
+};
+
+const toggleSelectionMode = () => {
+  if (selectionMode) {
+    setSelectedIds(new Set());
+  }
+
+  setSelectionMode((value) => !value);
+};
+
+
 
   const toggleSelect = (id) => {
     setSelectedIds((prev) => {
@@ -102,32 +117,59 @@ const Column = ({
     });
   };
 
-  const handleMoveTo = async (target) => {
-    if (!selectionMode || selectedIds.size === 0 || target === columnId) return;
+  
+const handleMoveTo = async (target) => {
+  const idsToMove = [...selectedIds];
 
-    const targetTasks = allTasks.filter(
-      (task) => String(task.status) === String(target),
+  if (!selectionMode || idsToMove.length === 0 || target === columnId) {
+    return;
+  }
+
+  console.log("Bulk move started:", { target, idsToMove });
+
+  const targetTasks = allTasks.filter(
+    (task) => String(task.status) === String(target)
+  );
+
+  let base = targetTasks.reduce(
+    (max, task) => Math.max(max, Number(task.order) || 0),
+    -1
+  );
+
+  try {
+    const tasksToMove = idsToMove
+      .map((id) =>
+        allTasks.find((task) => String(task._id) === String(id))
+      )
+      .filter(Boolean);
+
+    if (tasksToMove.length === 0) {
+      console.error("No selected tasks matched allTasks.");
+      return;
+    }
+
+    await Promise.all(
+      tasksToMove.map((task) => {
+        base += 1;
+
+        return updateTask(String(task._id), {
+          status: target,
+          order: base,
+        });
+      })
     );
 
-    let base = targetTasks.reduce(
-      (max, task) => Math.max(max, Number(task.order) || 0),
-      -1,
-    );
+    if (target === "done") {
+      fireConfetti();
+    }
 
-    const updates = [...selectedIds].map((id) => {
-      const task = allTasks.find((t) => String(t._id) === String(id));
-      if (!task) return null;
-      base += 1;
-      return updateTask(String(task._id), {
-        status: target,
-        order: base,
-      });
-    });
-
-    await Promise.all(updates);
     setSelectedIds(new Set());
     setSelectionMode(false);
-  };
+  } catch (error) {
+    console.error("Bulk move failed:", error);
+  }
+};
+
 
   useEffect(() => {
     setAnimate(true);
@@ -225,8 +267,8 @@ const Column = ({
               </button>
               <select
                 defaultValue=""
-                onChange={(e) => handleMoveTo(e.target.value)}
-                className="text-[10px] font-mono-code bg-zinc-900 border border-zinc-700 text-zinc-300 rounded px-1.5 py-0.5"
+              onChange={(e) => handleMoveTo(e.target.value)}
+                className="text-[12px] font-mono-code bg-zinc-900 border border-zinc-700 text-zinc-300 rounded px-1.5 py-0.5"
               >
                 <option value="" disabled>
                   Move {selectedIds.size} to…
