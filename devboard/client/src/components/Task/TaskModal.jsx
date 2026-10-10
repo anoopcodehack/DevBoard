@@ -67,6 +67,7 @@ const TaskModal = ({
     githubIssueNumber: task?.githubIssueNumber || "",
     dueDate: task?.dueDate || "",
     notes: task?.notes || "",
+   blockedBy: Array.isArray(task?.blockedBy) ? task.blockedBy .map((item) => typeof item === "object" && item !== null ? String(item._id ?? item.id ?? "") : String(item), ) .filter(Boolean) : [],
   };
 
   const [form, setForm] = useState(initialForm);
@@ -322,6 +323,9 @@ ${task.snippets
     ...(snippetCode
       ? { snippets: [{ language: snippetLang, code: snippetCode }] }
       : {}),
+      blockedBy: Array.isArray(form.blockedBy)
+  ? form.blockedBy
+  : [],
   });
 
   const handleSave = async () => {
@@ -347,6 +351,7 @@ ${task.snippets
     setDuplicating(true);
     try {
       const { githubIssueUrl, githubIssueNumber, ...payload } = buildPayload();
+      payload.blockedBy = [];
       await addTask({
         ...payload,
         title,
@@ -539,6 +544,92 @@ ${task.snippets
               </p>
             </div>
           </div>
+
+          
+<div className="space-y-2">
+  <div className="flex items-center justify-between gap-2">
+    <label
+      htmlFor="blockedBy"
+      className="text-xs font-medium text-[var(--text-secondary)]"
+    >
+      Blocked by
+    </label>
+
+    <span className="text-[10px] font-mono-code text-[var(--text-muted)]">
+      {(form.blockedBy || []).length} selected
+    </span>
+  </div>
+
+  <div
+    id="blockedBy"
+    className="overflow-hidden rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)]"
+  >
+    <div className="max-h-40 overflow-y-auto p-1.5">
+      {allTasks.filter(
+        (item) =>
+          String(item._id) !== String(task?._id)
+      ).length === 0 ? (
+        <p className="px-3 py-4 text-center text-xs text-[var(--text-muted)]">
+          No other tasks available
+        </p>
+      ) : (
+        allTasks
+          .filter(
+            (item) =>
+              String(item._id) !== String(task?._id)
+          )
+          .map((item) => {
+            const id = String(item._id);
+            const selected = (form.blockedBy || []).includes(id);
+
+            return (
+              <label
+                key={id}
+                className={`flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 transition ${
+                  selected
+                    ? "bg-rose-500/10"
+                    : "hover:bg-[var(--bg-card)]"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selected}
+                  onChange={(event) => {
+                    setForm((prev) => {
+                      const current = prev.blockedBy || [];
+
+                      return {
+                        ...prev,
+                        blockedBy: event.target.checked
+                          ? [...current, id]
+                          : current.filter((value) => value !== id),
+                      };
+                    });
+                  }}
+                  className="h-3.5 w-3.5 shrink-0 accent-rose-500"
+                />
+
+                <span className="min-w-0 flex-1 truncate text-xs text-[var(--text-primary)]">
+                  {item.title}
+                </span>
+
+                <span className="shrink-0 rounded border border-[var(--border-primary)] px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-[var(--text-muted)]">
+                  {String(item.status || "backlog").replace(
+                    /inprogress|in_progress/i,
+                    "In Progress"
+                  ).replace(/^backlog$/i, "Backlog").replace(/^review$/i, "Review").replace(/^done$/i, "Done")}
+                </span>
+              </label>
+            );
+          })
+      )}
+    </div>
+  </div>
+
+  <p className="text-[10px] leading-relaxed text-[var(--text-muted)]">
+    Select tasks that must be completed first. Uncheck a task to remove its dependency.
+  </p>
+</div>
 
           <div>
             <label className="text-xs text-[var(--text-secondary)] mb-1.5 block">
