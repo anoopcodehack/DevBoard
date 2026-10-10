@@ -12,6 +12,16 @@ const responseTime = require("./middleware/responseTime");
 
 dotenv.config();
 
+// Fail fast instead of crashing on the first DB query or login.
+// PORT is optional, the server falls back to 5000.
+const REQUIRED_ENV = ["MONGO_URI", "JWT_SECRET"];
+const missingEnv = REQUIRED_ENV.filter((key) => !process.env[key]);
+if (missingEnv.length > 0) {
+  console.error("❌ Missing required environment variables:", missingEnv.join(", "));
+  console.error("👉 Copy server/.env.example to server/.env and fill in the values");
+  process.exit(1);
+}
+
 const allowedOrigins = [
   "http://localhost:5173",
   process.env.FRONTEND_URL,
