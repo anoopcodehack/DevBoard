@@ -68,6 +68,10 @@ const taskSchema = new mongoose.Schema(
 ],}
 );
 
+// GET /api/tasks returns every task sorted by order; without an index MongoDB
+// sorts the whole collection in memory on each board load.
+taskSchema.index({ order: 1 });
+
 // Normalize tags at the API boundary: trim whitespace, drop empties, dedupe.
 // Tags arrive from the modal, GitHub import, and AI suggestions — whitespace
 // differences must not create distinct tags (e.g. "react " vs "react").
