@@ -38,6 +38,13 @@ const taskSchema = new mongoose.Schema(
         assignedAt: { type: Date, default: Date.now },
       },
     ],
+    // Earlier titles, oldest first; the current one stays in `title`
+    titleHistory: [
+      {
+        title: String,
+        changedAt: { type: Date, default: Date.now },
+      },
+    ],
     dueDate: { type: Date },
     pomodoroCount: { type: Number, default: 0 },
     order: { type: Number, default: 0 },

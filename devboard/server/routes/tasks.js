@@ -77,6 +77,15 @@ router.put("/:id", protect, async (req, res) => {
       });
     }
 
+    // Keep the old title when it is replaced by a different one
+    if (
+      typeof req.body.title === "string" &&
+      req.body.title.trim() &&
+      req.body.title.trim() !== task.title
+    ) {
+      task.titleHistory.push({ title: task.title, changedAt: new Date() });
+    }
+
     const statusChanged = req.body.status && req.body.status !== task.status;
     const previousStatus = task.status;
     if (statusChanged) {
@@ -88,6 +97,7 @@ router.put("/:id", protect, async (req, res) => {
     const updates = { ...req.body };
     delete updates.seenBy;
     delete updates.previousStatus;
+    delete updates.titleHistory;
     Object.assign(task, updates);
     if (statusChanged) task.previousStatus = previousStatus;
     if (req.body.tags !== undefined) {
