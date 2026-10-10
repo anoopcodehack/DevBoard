@@ -47,7 +47,7 @@ const Column = ({
   isActive,
   columns = [],
 }) => {
-  const { tasks: allTasks, allTasks: unfilteredTasks, updateTask } = useBoard();
+  const { tasks: allTasks, allTasks: unfilteredTasks, updateTask, deleteTask } = useBoard();
 
   const [sorted, setSorted] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -127,6 +127,20 @@ const Column = ({
     await Promise.all(updates);
     setSelectedIds(new Set());
     setSelectionMode(false);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!selectionMode || selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    if (!window.confirm(`Delete ${count} ${count === 1 ? "task" : "tasks"}?`)) return;
+
+    const ids = [...selectedIds];
+    const results = await Promise.allSettled(ids.map((id) => deleteTask(String(id))));
+
+    // keep the ones that failed selected so they can be retried
+    const failed = ids.filter((_, i) => results[i].status === "rejected");
+    setSelectedIds(new Set(failed));
+    if (failed.length === 0) setSelectionMode(false);
   };
 
   useEffect(() => {
@@ -239,6 +253,15 @@ const Column = ({
                     </option>
                   ))}
               </select>
+              <button
+                type="button"
+                onClick={handleDeleteSelected}
+                disabled={selectedIds.size === 0}
+                title="Delete selected tasks"
+                className="text-[10px] font-mono-code text-red-400/70 hover:text-red-400 border border-red-500/20 rounded px-1.5 py-0.5 transition disabled:opacity-40 disabled:pointer-events-none"
+              >
+                Delete {selectedIds.size}
+              </button>
             </div>
           ) : (
             <div className="flex items-center gap-2 min-w-0">
@@ -299,7 +322,7 @@ const Column = ({
               <button
                 type="button"
                 onClick={toggleSelectionMode}
-                title="Select multiple tasks to move"
+                title="Select multiple tasks to move or delete"
                 className="text-[10px] font-mono-code text-zinc-500 hover:text-zinc-300 px-1.5 py-0.5 rounded hover:bg-zinc-800 transition"
               >
                 Select
