@@ -779,6 +779,33 @@ ${task.snippets
             </div>
           )}
 
+          {/* Title History */}
+          {task?.titleHistory?.length > 0 && (
+            <div className="border border-[var(--border-primary)] rounded-lg px-3 py-2">
+              <span className="text-xs text-[var(--text-secondary)] block mb-1.5">
+                ✏️ Previous title{task.titleHistory.length === 1 ? "" : "s"}
+              </span>
+              <ul className="flex flex-col gap-1">
+                {task.titleHistory
+                  .slice(-5)
+                  .reverse()
+                  .map((h, i) => (
+                    <li
+                      key={i}
+                      className="text-xs text-[var(--text-muted)] flex justify-between gap-3"
+                    >
+                      <span className="truncate" title={h.title}>{h.title}</span>
+                      {h.changedAt && (
+                        <span className="text-[var(--text-secondary)] shrink-0">
+                          {timeAgo(h.changedAt)}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
+
 
           {/* Add Code Snippet */}
           <div className="border border-[var(--border-primary)] rounded-lg overflow-hidden">
