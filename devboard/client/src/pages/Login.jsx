@@ -54,11 +54,11 @@ const Login = () => {
       const payload = isRegister
         ? {
             name: form.name.trim(),
-            email: form.email.trim(),
+            email: form.email.trim().toLowerCase(),
             password: form.password,
           }
         : {
-            email: form.email.trim(),
+            email: form.email.trim().toLowerCase(),
             password: form.password,
           };
 

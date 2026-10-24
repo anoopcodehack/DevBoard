@@ -196,6 +196,23 @@ const WEATHER_ACCENTS = {
   storm: "#A78BFA",
 };
 
+const parseVoiceTask = (transcript) => {
+  const priorityMatch = transcript.match(
+    /(?:\b(?:with|as)\s+)?\b(high|medium|low)\s+priority\b|\bpriority\s+(high|medium|low)\b/i,
+  );
+  const priority = (priorityMatch?.[1] || priorityMatch?.[2] || "medium").toLowerCase();
+  const title = transcript
+    .replace(
+      /(?:\b(?:with|as)\s+)?\b(?:high|medium|low)\s+priority\b|\bpriority\s+(?:high|medium|low)\b/gi,
+      " ",
+    )
+    .replace(/\s+/g, " ")
+    .replace(/[,\s;:.!?]+$/, "")
+    .trim();
+
+  return { title, priority };
+};
+
 const Dashboard = () => {
   const {
     user,
@@ -215,6 +232,11 @@ const Dashboard = () => {
   } = useBoard();
   const { stars, loading: starsLoading } = useGithubStars();
   const [streak, setStreak] = useState(calculateStreak);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef(null);
+  const listeningRef = useRef(false);
+  const voiceResultHandledRef = useRef(false);
+  const voiceHandlerRef = useRef(null);
 
   const recordTaskCompletion = () => {
     try {
@@ -451,6 +473,87 @@ const Dashboard = () => {
     setWeatherStatus("off");
   };
 
+  const handleVoice = () => {
+    if (listeningRef.current) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Voice task creation is not supported by this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    listeningRef.current = true;
+    voiceResultHandledRef.current = false;
+
+    recognition.onstart = () => setListening(true);
+    recognition.onresult = async (event) => {
+      if (voiceResultHandledRef.current) return;
+      voiceResultHandledRef.current = true;
+
+      const transcript = Array.from(event.results)
+        .filter((result) => result.isFinal)
+        .map((result) => result[0]?.transcript || "")
+        .join(" ")
+        .trim();
+
+      if (!transcript) {
+        toast.warn("I couldn't hear a task. Try speaking again.");
+        return;
+      }
+
+      const task = parseVoiceTask(transcript);
+      if (!task.title) {
+        toast.warn("Please say a task title along with its priority.");
+        return;
+      }
+
+      try {
+        await addTask({ ...task, status: "backlog" });
+        toast.success(`Created task: ${task.title}`);
+      } catch (error) {
+        console.error("Voice task creation failed:", error);
+        toast.error("Could not create the voice task.");
+      }
+    };
+    recognition.onerror = (event) => {
+      if (event.error !== "aborted") {
+        toast.error(
+          event.error === "not-allowed" || event.error === "service-not-allowed"
+            ? "Allow microphone access to create tasks by voice."
+            : "Voice recognition failed. Please try again.",
+        );
+      }
+      listeningRef.current = false;
+      setListening(false);
+      recognitionRef.current = null;
+    };
+    recognition.onend = () => {
+      listeningRef.current = false;
+      setListening(false);
+      recognitionRef.current = null;
+    };
+
+    try {
+      recognition.start();
+    } catch (error) {
+      listeningRef.current = false;
+      setListening(false);
+      recognitionRef.current = null;
+      console.error("Could not start voice recognition:", error);
+      toast.error("Could not start voice recognition. Please try again.");
+    }
+  };
+  voiceHandlerRef.current = handleVoice;
+
   const [searchHistory, setSearchHistory] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("search_history") || "[]");
@@ -462,7 +565,28 @@ const Dashboard = () => {
 
   useEffect(() => {
     const handler = (e) => {
-      if (e.target.matches("input, textarea")) return;
+      const target = e.target;
+      const isTypingTarget =
+        target instanceof HTMLElement &&
+        target.matches(
+          "input, textarea, select, [contenteditable]:not([contenteditable='false']), [role='textbox'], button, a, [role='button']",
+        );
+
+      if (
+        e.code === "Space" &&
+        !e.repeat &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        !isTypingTarget &&
+        !listeningRef.current
+      ) {
+        e.preventDefault();
+        voiceHandlerRef.current?.();
+        return;
+      }
+
+      if (isTypingTarget) return;
       if (e.key === "n" || e.key === "N") {
         setIsCreatingFirstTask(true);
       }
@@ -477,6 +601,13 @@ const Dashboard = () => {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  useEffect(
+    () => () => {
+      recognitionRef.current?.abort();
+    },
+    [],
+  );
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (event) => {
@@ -804,6 +935,17 @@ const Dashboard = () => {
             <span>New Task</span>
           </button>
 
+          <button
+            type="button"
+            onClick={handleVoice}
+            aria-label={listening ? "Stop voice task recording" : "Create task with voice"}
+            aria-pressed={listening}
+            className={`text-lg transition ${listening ? "text-red-400 animate-pulse" : "text-[#555] hover:text-[#aaa]"}`}
+            title={listening ? "Stop voice recording" : "Create task with voice (Space)"}
+          >
+            🎤
+          </button>
+
           {/* Focus Mode */}
           <button
             type="button"
@@ -1122,6 +1264,10 @@ const Dashboard = () => {
                 <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">N</kbd>
               </div>
               <div className="flex items-center justify-between">
+                <span className="text-zinc-400">Create task with voice</span>
+                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">Space</kbd>
+              </div>
+              <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Search tasks</span>
                 <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">/</kbd>
               </div>
@@ -1150,4 +1296,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
