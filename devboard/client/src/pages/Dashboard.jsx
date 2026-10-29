@@ -240,6 +240,7 @@ const Dashboard = () => {
     viewTask,
     activeTag,
     setActiveTag,
+    recentActivity,
   } = useBoard();
   const { stars, loading: starsLoading } = useGithubStars();
   const [streak, setStreak] = useState(calculateStreak);
@@ -1037,7 +1038,37 @@ ${stuck
           </div>
         </div>
 
-        {/* Right: Actions, GitHub, User Profile */}
+        {/* Live Team Activity Ticker */}
+        <div
+          className="hidden xl:flex items-center gap-2 min-w-0 max-w-xs px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/50 no-print"
+          aria-live="polite"
+          aria-label="Recent team activity"
+        >
+          <ActivityIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+
+          <span className="text-[10px] uppercase tracking-wider text-emerald-400 shrink-0 font-mono-code">
+            Live
+          </span>
+
+          <div className="min-w-0 overflow-hidden">
+            {recentActivity && recentActivity.length > 0 ? (
+              <p
+                key={recentActivity[0].id}
+                className="ticker-item text-xs text-zinc-300 truncate font-mono-code"
+                title={`${recentActivity[0].userName} ${recentActivity[0].action} "${recentActivity[0].taskTitle}"`}
+              >
+                <span className="text-zinc-100">{recentActivity[0].userName}</span>{" "}
+                {recentActivity[0].action}{" "}
+                <span className="text-blue-300">{recentActivity[0].taskTitle}</span>
+              </p>
+            ) : (
+              <p className="text-xs text-zinc-500 truncate font-mono-code">
+                Waiting for team activity...
+              </p>
+            )}
+          </div>
+        </div>
+         {/* Right: Actions, GitHub, User Profile */}
         <div className="flex items-center gap-2 shrink-0 no-print">
           {/* GitHub Stars */}
           <a
