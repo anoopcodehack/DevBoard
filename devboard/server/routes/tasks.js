@@ -16,6 +16,19 @@ const fireWebhook = async (url, payload) => {
   }
 };
 
+/** Broadcast a team activity event to the navbar ticker. */
+const broadcastActivity = (req, action, taskTitle) => {
+  const io = req.app.get("io");
+  if (!io) return;
+  io.emit("activity:new", {
+    id: `${Date.now()}-${Math.random()}`,
+    action,
+    taskTitle: taskTitle || "Untitled task",
+    userName: req.user?.name || "A teammate",
+    timestamp: new Date().toISOString(),
+  });
+};
+
 // GET /api/tasks — get all tasks
 router.get("/", protect, async (req, res) => {
   try {
@@ -63,6 +76,7 @@ router.post("/", protect, async (req, res) => {
       ...taskData,
       tags: Task.sanitizeTags(req.body.tags),
     });
+    broadcastActivity(req, "created", task.title);
     res.status(201).json(task);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -125,6 +139,13 @@ router.put("/:id", protect, async (req, res) => {
     const io = req.app.get("io");
     if (io) io.emit("task:updated", task);
 
+    // Live activity for the navbar ticker
+    broadcastActivity(
+      req,
+      statusChanged ? `moved to ${task.status}` : "updated",
+      task.title,
+    );
+
     // Outgoing webhook: never block the response on it
     if (req.user.webhookUrl) {
       fireWebhook(req.user.webhookUrl, {
@@ -152,6 +173,7 @@ router.delete("/:id", protect, async (req, res) => {
       { blockedBy: task._id },
       { $pull: { blockedBy: task._id } },
     );
+    broadcastActivity(req, "deleted", task.title);
     res.json({ message: "Task deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });

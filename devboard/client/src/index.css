@@ -160,3 +160,8 @@ body {
 .card-flip {
   animation: cardFlip 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
+@keyframes ticker-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ticker-item { animation: ticker-in 0.3s ease-out; }
