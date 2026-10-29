@@ -7,6 +7,7 @@ import { useSuggestTags } from "../../hooks/useSuggestTags";
 import { getAvatarColor } from "../../utils/avatarColor";
 import { unzoomDragStyle, useBoardZoom } from "../../utils/boardZoom";
 import { timeAgo } from "../../utils/timeAgo";
+import { renderMentions } from "../../utils/mentions";
 import {
   CodeIcon,
   CopyIcon,
@@ -359,7 +360,7 @@ const TaskCard = ({
           {/* Description Excerpt */}
           {task.description && (
             <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed mb-2 font-normal">
-              {task.description}
+              {renderMentions(task.description)}
             </p>
           )}
 

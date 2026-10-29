@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { toast } from "react-toastify";
 import { useBoard } from "../../context/BoardContext";
 import { timeAgo } from "../../utils/timeAgo";
+import { hasMentions, renderMentions } from "../../utils/mentions";
 import { columnLimit, isColumnFull } from "../../utils/columnLimits";
 import { QRCodeSVG } from "qrcode.react";
 import {
@@ -618,6 +619,15 @@ ${task.snippets
                 {descriptionLength >= DESCRIPTION_ALERT_AT && " almost full"}
               </p>
             </div>
+
+            {hasMentions(form.description) && (
+              <p
+                className="mt-1.5 text-xs text-[var(--text-secondary)] whitespace-pre-wrap break-words line-clamp-3"
+                aria-label="Description preview with mentions"
+              >
+                {renderMentions(form.description)}
+              </p>
+            )}
 
             {aiError && <p className="text-xs text-red-400 mt-1">{aiError}</p>}
           </div>
