@@ -11,6 +11,7 @@
     "concurrently": "^8.2.0"
   },
   "dependencies": {
-    "canvas-confetti": "^1.9.4"
+    "canvas-confetti": "^1.9.4",
+    "jspdf": "^4.2.1"
   }
 }
