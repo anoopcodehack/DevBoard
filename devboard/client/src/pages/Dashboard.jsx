@@ -8,6 +8,7 @@ import TaskModal from "../components/Task/TaskModal";
 import Heatmap from "../components/Heatmap/Heatmap";
 import { useBoard } from "../context/BoardContext";
 import { useGithubStars } from "../hooks/useGithubStars";
+import jsPDF from "jspdf";
 import {
   LogoIcon,
   SearchIcon,
@@ -51,16 +52,20 @@ const CSV_HEADERS = ["Title", "Status", "Priority", "Tags", "Created"];
 
 const calculateStreak = () => {
   try {
-    const history = JSON.parse(localStorage.getItem("completion_history") || "[]");
+    const history = JSON.parse(
+      localStorage.getItem("completion_history") || "[]",
+    );
     if (!Array.isArray(history)) return 0;
 
     const completedDays = new Set(
       history
         .map((completion) => {
           const date = new Date(completion);
-          return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
+          return Number.isNaN(date.getTime())
+            ? null
+            : date.toISOString().slice(0, 10);
         })
-        .filter(Boolean)
+        .filter(Boolean),
     );
     const today = new Date();
     const todayKey = today.toISOString().slice(0, 10);
@@ -193,7 +198,8 @@ const getTimeMood = (hour = new Date().getHours()) => {
 const getWeatherMood = (code) => {
   if ([0, 1].includes(code)) return "clear";
   if ([2, 3, 45, 48].includes(code)) return "cloudy";
-  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "rain";
+  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code))
+    return "rain";
   if ([71, 73, 75, 77, 85, 86].includes(code)) return "snow";
   if ([95, 96, 97, 99].includes(code)) return "storm";
   return null;
@@ -211,7 +217,11 @@ const parseVoiceTask = (transcript) => {
   const priorityMatch = transcript.match(
     /(?:\b(?:with|as)\s+)?\b(high|medium|low)\s+priority\b|\bpriority\s+(high|medium|low)\b/i,
   );
-  const priority = (priorityMatch?.[1] || priorityMatch?.[2] || "medium").toLowerCase();
+  const priority = (
+    priorityMatch?.[1] ||
+    priorityMatch?.[2] ||
+    "medium"
+  ).toLowerCase();
   const title = transcript
     .replace(
       /(?:\b(?:with|as)\s+)?\b(?:high|medium|low)\s+priority\b|\bpriority\s+(?:high|medium|low)\b/gi,
@@ -277,14 +287,14 @@ const Dashboard = () => {
     const idealPoints = idealLine
       .map(
         (d, i) =>
-          `${pad + (i / (days - 1)) * innerW},${pad + ((maxY - d.ideal) / maxY) * innerH}`
+          `${pad + (i / (days - 1)) * innerW},${pad + ((maxY - d.ideal) / maxY) * innerH}`,
       )
       .join(" ");
 
     const actualPoints = actualLine
       .map(
         (d, i) =>
-          `${pad + (i / (days - 1)) * innerW},${pad + ((maxY - d.actual) / maxY) * innerH}`
+          `${pad + (i / (days - 1)) * innerW},${pad + ((maxY - d.actual) / maxY) * innerH}`,
       )
       .join(" ");
 
@@ -298,7 +308,9 @@ const Dashboard = () => {
 
   const recordTaskCompletion = () => {
     try {
-      const history = JSON.parse(localStorage.getItem("completion_history") || "[]");
+      const history = JSON.parse(
+        localStorage.getItem("completion_history") || "[]",
+      );
       const completions = Array.isArray(history) ? history : [];
       completions.push(new Date().toISOString());
       localStorage.setItem("completion_history", JSON.stringify(completions));
@@ -336,7 +348,7 @@ const Dashboard = () => {
       await axios.put(
         "/api/v1/auth/profile",
         { webhookUrl: webhookUrl.trim() },
-        webhookHeaders
+        webhookHeaders,
       );
       toast.success("Webhook URL saved");
     } catch {
@@ -399,7 +411,7 @@ const Dashboard = () => {
   const [retroCopied, setRetroCopied] = useState(false);
   const csvInputRef = useRef(null);
   const [autoThemeEnabled, setAutoThemeEnabled] = useState(
-    () => localStorage.getItem("board_auto_theme") === "true"
+    () => localStorage.getItem("board_auto_theme") === "true",
   );
   const [timeMood, setTimeMood] = useState(() => getTimeMood());
   const [weatherCoordinates, setWeatherCoordinates] = useState(null);
@@ -408,7 +420,7 @@ const Dashboard = () => {
   const weatherRequestId = useRef(0);
 
   const [theme, setTheme] = useState(
-    () => JSON.parse(localStorage.getItem("board_theme")) || "blue"
+    () => JSON.parse(localStorage.getItem("board_theme")) || "blue",
   );
 
   const moodTheme = MOOD_THEMES[timeMood] || MOOD_THEMES.night;
@@ -422,8 +434,14 @@ const Dashboard = () => {
 
   useEffect(() => {
     document.documentElement.style.setProperty("--accent", activeTheme.accent);
-    document.documentElement.style.setProperty("--accent-10", `${activeTheme.accent}1A`);
-    document.documentElement.style.setProperty("--accent-20", `${activeTheme.accent}33`);
+    document.documentElement.style.setProperty(
+      "--accent-10",
+      `${activeTheme.accent}1A`,
+    );
+    document.documentElement.style.setProperty(
+      "--accent-20",
+      `${activeTheme.accent}33`,
+    );
     document.documentElement.style.setProperty("--bg", activeTheme.bg);
   }, [activeTheme.accent, activeTheme.bg]);
 
@@ -477,9 +495,12 @@ const Dashboard = () => {
           current: "weather_code",
           timezone: "auto",
         });
-        const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, {
-          signal: controller.signal,
-        });
+        const response = await fetch(
+          `https://api.open-meteo.com/v1/forecast?${params}`,
+          {
+            signal: controller.signal,
+          },
+        );
         if (!response.ok) throw new Error("Weather request failed");
 
         const data = await response.json();
@@ -693,7 +714,11 @@ const Dashboard = () => {
       setDeferredPrompt(event);
     };
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    return () =>
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
   }, []);
 
   useEffect(() => {
@@ -776,7 +801,6 @@ const Dashboard = () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
-
   // Builds a sprint retrospective from the last 14 days of board data and
   // copies it to the clipboard as markdown.
   const generateRetro = async () => {
@@ -828,7 +852,541 @@ ${stuck
       setTimeout(() => setRetroCopied(false), 2000);
     } catch {
       toast.error("Could not copy the retro to the clipboard");
+    }};
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    const margin = 12;
+    const contentWidth = pageWidth - margin * 2;
+    const columnGap = 5;
+    const columnWidth = (contentWidth - columnGap * 3) / 4;
+
+    const boardTop = 65;
+    const bottomLimit = pageHeight - 18;
+    const columnHeight = bottomLimit - boardTop;
+
+    const columns = [
+      {
+        status: "backlog",
+        label: "TO DO",
+        color: [145, 150, 160],
+        light: [240, 242, 245],
+      },
+      {
+        status: "inprogress",
+        label: "IN PROGRESS",
+        color: [65, 125, 220],
+        light: [230, 239, 253],
+      },
+      {
+        status: "review",
+        label: "IN REVIEW",
+        color: [205, 155, 55],
+        light: [251, 243, 224],
+      },
+      {
+        status: "done",
+        label: "DONE",
+        color: [55, 155, 105],
+        light: [228, 245, 235],
+      },
+    ];
+
+    const normalizeStatus = (value) =>
+      String(value || "")
+        .toLowerCase()
+        .replace(/[\s_-]/g, "");
+
+    const groupedTasks = columns.map((column) =>
+      tasks.filter(
+        (task) =>
+          normalizeStatus(task.status) === normalizeStatus(column.status),
+      ),
+    );
+
+    const totalTasks = tasks.length;
+    const completedTasks = groupedTasks[3].length;
+    const inProgressTasks = groupedTasks[1].length;
+    const completionRate = totalTasks
+      ? Math.round((completedTasks / totalTasks) * 100)
+      : 0;
+
+    const priorityStyles = {
+      high: {
+        bg: [252, 226, 226],
+        text: [185, 55, 55],
+      },
+      medium: {
+        bg: [254, 249, 195],
+        text: [146, 105, 25],
+      },
+      low: {
+        bg: [219, 234, 254],
+        text: [45, 90, 190],
+      },
+    };
+
+    const tagColors = [
+      { bg: [232, 240, 254], text: [55, 100, 175] },
+      { bg: [237, 231, 250], text: [115, 80, 165] },
+      { bg: [230, 244, 238], text: [55, 125, 90] },
+    ];
+
+    // Truncate text without cutting words unnecessarily.
+    const getLimitedLines = (text, width, maxLines) => {
+      const fullLines = doc.splitTextToSize(String(text || ""), width);
+
+      if (fullLines.length <= maxLines) {
+        return fullLines;
+      }
+
+      const result = fullLines.slice(0, maxLines);
+      let lastLine = result[maxLines - 1].trimEnd();
+
+      while (
+        lastLine.length > 0 &&
+        doc.getTextWidth(lastLine + "...") > width
+      ) {
+        lastLine = lastLine.slice(0, -1).trimEnd();
+      }
+
+      result[maxLines - 1] = lastLine + "...";
+
+      return result;
+    };
+
+    // Prepare tag badges and wrap them into rows.
+    const prepareTags = (tags, maxWidth) => {
+      const tagList = Array.isArray(tags)
+        ? tags
+        : typeof tags === "string"
+          ? tags
+              .split(",")
+              .map((tag) => tag.trim())
+              .filter(Boolean)
+          : [];
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+
+      const rows = [[]];
+      let currentWidth = 0;
+
+      tagList.forEach((tag) => {
+        const label =
+          String(tag).length > 16
+            ? String(tag).slice(0, 15) + "..."
+            : String(tag);
+
+        const badgeWidth = Math.min(doc.getTextWidth(label) + 5, 28);
+
+        if (
+          currentWidth + badgeWidth > maxWidth &&
+          rows[rows.length - 1].length > 0
+        ) {
+          rows.push([]);
+          currentWidth = 0;
+        }
+
+        rows[rows.length - 1].push({
+          label,
+          width: badgeWidth,
+        });
+
+        currentWidth += badgeWidth + 1.5;
+      });
+
+      return rows.filter((row) => row.length > 0);
+    };
+
+    // Draw the document header and summary.
+    const drawHeader = () => {
+      let y = 18;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(21);
+      doc.setTextColor(35, 40, 55);
+      doc.text("DevBoard", margin, y);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(110, 115, 130);
+      doc.text("PROJECT BOARD REPORT", margin, y + 7);
+
+      doc.setFontSize(8);
+      doc.text(
+        `Generated: ${new Date().toLocaleDateString()}`,
+        pageWidth - margin,
+        y + 2,
+        { align: "right" },
+      );
+
+      // Summary panel.
+      const summaryY = 30;
+      const summaryHeight = 27;
+      const metricWidth = contentWidth / 4;
+
+      doc.setFillColor(247, 248, 251);
+      doc.setDrawColor(235, 237, 242);
+      doc.roundedRect(
+        margin,
+        summaryY,
+        contentWidth,
+        summaryHeight,
+        2.5,
+        2.5,
+        "FD",
+      );
+
+      const metrics = [
+        { value: totalTasks, label: "TOTAL TASKS" },
+        { value: completedTasks, label: "COMPLETED" },
+        { value: `${completionRate}%`, label: "COMPLETION" },
+        { value: inProgressTasks, label: "IN PROGRESS" },
+      ];
+
+      metrics.forEach((metric, index) => {
+        const x = margin + index * metricWidth;
+
+        if (index > 0) {
+          doc.setDrawColor(225, 228, 234);
+          doc.line(x, summaryY + 5, x, summaryY + summaryHeight - 5);
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.setTextColor(40, 48, 65);
+        doc.text(String(metric.value), x + 6, summaryY + 12);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(125, 130, 140);
+        doc.text(metric.label, x + 6, summaryY + 21);
+      });
+    };
+
+    // Draw the four column panels.
+    const drawColumns = () => {
+      columns.forEach((column, index) => {
+        const x = margin + index * (columnWidth + columnGap);
+
+        doc.setFillColor(248, 249, 251);
+        doc.setDrawColor(233, 235, 240);
+        doc.roundedRect(x, boardTop, columnWidth, columnHeight, 3, 3, "FD");
+
+        // Status indicator.
+        doc.setFillColor(...column.color);
+        doc.circle(x + 5, boardTop + 9, 1.5, "F");
+
+        // Column title.
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8.5);
+        doc.setTextColor(45, 52, 65);
+        doc.text(column.label, x + 9, boardTop + 10);
+
+        // Task count badge.
+        const count = groupedTasks[index].length;
+        const countText = String(count);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7);
+
+        const badgeWidth = doc.getTextWidth(countText) + 6;
+        const badgeX = x + columnWidth - badgeWidth - 3;
+
+        doc.setFillColor(...column.light);
+        doc.roundedRect(badgeX, boardTop + 4.5, badgeWidth, 7, 2, 2, "F");
+
+        doc.setTextColor(...column.color);
+        doc.text(countText, badgeX + badgeWidth / 2, boardTop + 9.3, {
+          align: "center",
+        });
+
+        // Header separator.
+        doc.setDrawColor(230, 232, 237);
+        doc.line(x + 3, boardTop + 15, x + columnWidth - 3, boardTop + 15);
+      });
+    };
+
+    // Prepare one task card.
+    const prepareCard = (task, cardWidth) => {
+      const padding = 3.5;
+      const priority = String(task.priority || "normal").toLowerCase();
+
+      const priorityStyle = priorityStyles[priority] || {
+        bg: [235, 237, 241],
+        text: [90, 95, 105],
+      };
+
+      const priorityLabel = priority.toUpperCase();
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6);
+
+      const priorityWidth = Math.max(13, doc.getTextWidth(priorityLabel) + 5);
+
+      const titleWidth = cardWidth - padding * 2 - priorityWidth - 3;
+
+      doc.setFontSize(8.5);
+
+      const titleLines = getLimitedLines(
+        task.title || "Untitled task",
+        titleWidth,
+        2,
+      );
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+
+      const descriptionLines = task.description
+        ? getLimitedLines(task.description, cardWidth - padding * 2, 3)
+        : [];
+
+      const tagRows = prepareTags(task.tags, cardWidth - padding * 2);
+
+      const createdDate = task.createdAt ? formatCsvDate(task.createdAt) : "";
+
+      const titleHeight = titleLines.length * 3.8;
+      const descriptionHeight = descriptionLines.length * 3.2;
+
+      const descriptionTagGap =
+        descriptionLines.length > 0 && tagRows.length > 0 ? 3 : 0;
+
+      const tagHeight = tagRows.length * 6;
+
+      const separatorHeight =
+        descriptionLines.length > 0 && (tagRows.length > 0 || createdDate)
+          ? 3
+          : 0;
+
+      const dateHeight = createdDate ? 5 : 0;
+
+      const cardHeight =
+        7 +
+        titleHeight +
+        descriptionHeight +
+        descriptionTagGap +
+        separatorHeight +
+        tagHeight +
+        dateHeight;
+
+      return {
+        padding,
+        priority,
+        priorityLabel,
+        priorityWidth,
+        priorityStyle,
+        titleLines,
+        descriptionLines,
+        tagRows,
+        createdDate,
+        titleHeight,
+        descriptionHeight,
+        descriptionTagGap,
+        separatorHeight,
+        tagHeight,
+        dateHeight,
+        cardHeight,
+      };
+    };
+
+    // Draw one complete task card.
+    const drawCard = (task, x, y, width, layout) => {
+      const {
+        padding,
+        priorityLabel,
+        priorityWidth,
+        priorityStyle,
+        titleLines,
+        descriptionLines,
+        tagRows,
+        createdDate,
+        titleHeight,
+        descriptionHeight,
+        separatorHeight,
+      } = layout;
+
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(225, 228, 234);
+      doc.roundedRect(x, y, width, layout.cardHeight, 2, 2, "FD");
+
+      // Task title.
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(35, 40, 50);
+      doc.text(titleLines, x + padding, y + 6.5);
+
+      // Priority badge.
+      const badgeX = x + width - priorityWidth - padding;
+
+      doc.setFillColor(...priorityStyle.bg);
+      doc.roundedRect(badgeX, y + 2.5, priorityWidth, 5.5, 1.8, 1.8, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6);
+      doc.setTextColor(...priorityStyle.text);
+      doc.text(priorityLabel, badgeX + priorityWidth / 2, y + 6.2, {
+        align: "center",
+      });
+
+      let contentY = y + 6.5 + titleHeight;
+
+      // Description.
+      if (descriptionLines.length > 0) {
+        contentY += 1;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+        doc.setTextColor(100, 105, 115);
+        doc.text(descriptionLines, x + padding, contentY);
+
+        contentY += descriptionHeight + 2;
+      }
+
+      // Individual tag badges.
+      if (tagRows.length > 0) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(6.5);
+
+        tagRows.forEach((row, rowIndex) => {
+          let tagX = x + padding;
+          const tagY = contentY + rowIndex * 6;
+
+          row.forEach((tag, tagIndex) => {
+            const color = tagColors[tagIndex % tagColors.length];
+
+            doc.setFillColor(...color.bg);
+            console.log("Tag badge dimensions:", {
+              tagX,
+              tagY,
+              width: tag.width,
+              height: 4.5,
+            });
+            doc.roundedRect(tagX, tagY - 3.2, tag.width, 4.5, 1.3, 1.3, "F");
+
+            doc.setTextColor(...color.text);
+            doc.text(tag.label, tagX + tag.width / 2, tagY - 0.2, {
+              align: "center",
+            });
+
+            tagX += tag.width + 1.5;
+          });
+        });
+
+        contentY += layout.tagHeight;
+      }
+
+      // Subtle separator.
+      if (separatorHeight > 0) {
+        contentY -= 3;
+
+        doc.setDrawColor(235, 237, 241);
+        doc.line(x + padding, contentY, x + width - padding, contentY);
+
+        contentY += 2;
+      }
+
+      // Creation date.
+      if (createdDate) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(6.5);
+        doc.setTextColor(130, 135, 145);
+        doc.text(`Created: ${createdDate}`, x + padding, contentY + 1);
+      }
+    };
+
+    // Track the next unprinted task in each column.
+    const taskIndexes = columns.map(() => 0);
+
+    let pageNumber = 0;
+
+    while (
+      taskIndexes.some(
+        (taskIndex, index) => taskIndex < groupedTasks[index].length,
+      ) ||
+      pageNumber === 0
+    ) {
+      if (pageNumber > 0) {
+        doc.addPage();
+      }
+
+      pageNumber += 1;
+
+      drawHeader();
+      drawColumns();
+
+      // Render tasks independently in each column.
+      columns.forEach((column, index) => {
+        const columnX = margin + index * (columnWidth + columnGap);
+
+        const cardWidth = columnWidth - 6;
+        const cardX = columnX + 3;
+
+        let cardY = boardTop + 19;
+
+        const columnTasks = groupedTasks[index];
+        let taskIndex = taskIndexes[index];
+
+        if (columnTasks.length === 0) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7.5);
+          doc.setTextColor(150, 155, 165);
+          doc.text("No tasks in this column", columnX + 4, boardTop + 27);
+          return;
+        }
+
+        while (taskIndex < columnTasks.length) {
+          const task = columnTasks[taskIndex];
+
+          const layout = prepareCard(task, cardWidth);
+
+          // Move the entire card to the next page if necessary.
+          if (cardY + layout.cardHeight > bottomLimit - 3) {
+            break;
+          }
+
+          drawCard(task, cardX, cardY, cardWidth, layout);
+
+          cardY += layout.cardHeight + 3.5;
+          taskIndex += 1;
+        }
+
+        taskIndexes[index] = taskIndex;
+      });
     }
+
+    // Add consistent footers to every page.
+    const totalPages = doc.internal.getNumberOfPages();
+
+    for (let page = 1; page <= totalPages; page += 1) {
+      doc.setPage(page);
+
+      doc.setDrawColor(232, 234, 239);
+      doc.line(margin, pageHeight - 14, pageWidth - margin, pageHeight - 14);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(140, 145, 155);
+
+      doc.text("DevBoard | Project Board Export", margin, pageHeight - 8);
+
+      doc.text(
+        `Page ${page} of ${totalPages}`,
+        pageWidth - margin,
+        pageHeight - 8,
+        { align: "right" },
+      );
+    }
+
+    doc.save(`devboard-export-${formatCsvDate(Date.now())}.pdf`);
   };
 
   const handleImportCSV = async (event) => {
@@ -849,15 +1407,23 @@ ${stuck
     try {
       const text = (await file.text()).replace(/^\uFEFF/, "");
       const rows = parseCsvRows(text);
-      const nonEmptyRows = rows.filter((cells) => cells.some((cell) => cell.trim()));
+      const nonEmptyRows = rows.filter((cells) =>
+        cells.some((cell) => cell.trim()),
+      );
       if (nonEmptyRows.length < 2) {
-        throw new Error("The CSV must include a header row and at least one task.");
+        throw new Error(
+          "The CSV must include a header row and at least one task.",
+        );
       }
 
-      const headers = nonEmptyRows[0].map((header) => header.trim().toLowerCase());
+      const headers = nonEmptyRows[0].map((header) =>
+        header.trim().toLowerCase(),
+      );
       const titleIndex = headers.indexOf("title");
       if (titleIndex === -1) {
-        throw new Error('The CSV needs a "Title" column. Export a DevBoard CSV for the supported format.');
+        throw new Error(
+          'The CSV needs a "Title" column. Export a DevBoard CSV for the supported format.',
+        );
       }
 
       const statusIndex = headers.indexOf("status");
@@ -869,12 +1435,16 @@ ${stuck
       nonEmptyRows.slice(1).forEach((cells, index) => {
         const rowNumber = index + 2;
         const title = (cells[titleIndex] || "").trim();
-        const status = statusIndex === -1
-          ? "backlog"
-          : (cells[statusIndex] || "backlog").trim().toLowerCase() || "backlog";
-        const priority = priorityIndex === -1
-          ? "medium"
-          : (cells[priorityIndex] || "medium").trim().toLowerCase() || "medium";
+        const status =
+          statusIndex === -1
+            ? "backlog"
+            : (cells[statusIndex] || "backlog").trim().toLowerCase() ||
+              "backlog";
+        const priority =
+          priorityIndex === -1
+            ? "medium"
+            : (cells[priorityIndex] || "medium").trim().toLowerCase() ||
+              "medium";
 
         if (!title) {
           invalidRows.push(`row ${rowNumber}: title is required`);
@@ -889,16 +1459,22 @@ ${stuck
               title,
               status,
               priority,
-              tags: tagsIndex === -1
-                ? []
-                : (cells[tagsIndex] || "").split(";").map((tag) => tag.trim()).filter(Boolean),
+              tags:
+                tagsIndex === -1
+                  ? []
+                  : (cells[tagsIndex] || "")
+                      .split(";")
+                      .map((tag) => tag.trim())
+                      .filter(Boolean),
             },
           });
         }
       });
 
       if (!candidates.length) {
-        throw new Error(invalidRows[0] || "No valid tasks were found in this CSV.");
+        throw new Error(
+          invalidRows[0] || "No valid tasks were found in this CSV.",
+        );
       }
 
       let importedCount = 0;
@@ -914,11 +1490,15 @@ ${stuck
 
       const skippedCount = invalidRows.length + failedRows.length;
       if (importedCount) {
-        toast.success(`Imported ${importedCount} task${importedCount === 1 ? "" : "s"}.`);
+        toast.success(
+          `Imported ${importedCount} task${importedCount === 1 ? "" : "s"}.`,
+        );
       }
       if (skippedCount) {
         const firstIssue = invalidRows[0] || failedRows[0];
-        toast.warn(`${skippedCount} row${skippedCount === 1 ? " was" : "s were"} skipped. ${firstIssue}`);
+        toast.warn(
+          `${skippedCount} row${skippedCount === 1 ? " was" : "s were"} skipped. ${firstIssue}`,
+        );
       }
     } catch (error) {
       toast.error(error.message || "Could not read this CSV file.");
@@ -931,8 +1511,9 @@ ${stuck
   const completionRate =
     myTasks.length > 0
       ? Math.round(
-        (myTasks.filter((t) => t.status === "done").length / myTasks.length) * 100
-      )
+          (myTasks.filter((t) => t.status === "done").length / myTasks.length) *
+            100,
+        )
       : 0;
   const daysRemaining = activeSprint
     ? Math.max(
@@ -950,7 +1531,10 @@ ${stuck
           <div key={col} className="flex flex-col w-72 gap-3">
             <div className="h-9 bg-zinc-900 rounded-lg animate-pulse" />
             {[1, 2, 3].map((card) => (
-              <div key={card} className="animate-pulse bg-zinc-900/60 border border-zinc-800 rounded-lg h-28 w-full" />
+              <div
+                key={card}
+                className="animate-pulse bg-zinc-900/60 border border-zinc-800 rounded-lg h-28 w-full"
+              />
             ))}
           </div>
         ))}
@@ -968,14 +1552,21 @@ ${stuck
             <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center">
               <LogoIcon className="w-4 h-4" />
             </div>
-            <span className="font-semibold text-sm tracking-tight text-zinc-100">DevBoard</span>
-            <span className="text-[10px] font-mono-code text-zinc-500 bg-zinc-900 border border-zinc-800 px-1.5 py-0.2 rounded">v1.2</span>
+            <span className="font-semibold text-sm tracking-tight text-zinc-100">
+              DevBoard
+            </span>
+            <span className="text-[10px] font-mono-code text-zinc-500 bg-zinc-900 border border-zinc-800 px-1.5 py-0.2 rounded">
+              v1.2
+            </span>
           </div>
 
           <div className="h-4 w-[1px] bg-zinc-800" />
 
-          <span className={`inline-block text-xs font-mono-code transition-all duration-300 ${
-                  countAnim? "scale-125 text-purple-400": "text-zinc-400"}`}>
+          <span
+            className={`inline-block text-xs font-mono-code transition-all duration-300 ${
+              countAnim ? "scale-125 text-purple-400" : "text-zinc-400"
+            }`}
+          >
             {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
           </span>
           {lastVisit && (
@@ -986,7 +1577,11 @@ ${stuck
               last visit {timeAgo(lastVisit)}
             </span>
           )}
-          {streak > 0 && <span className="text-xs font-mono-code text-orange-300">🔥 {streak} day streak</span>}
+          {streak > 0 && (
+            <span className="text-xs font-mono-code text-orange-300">
+              🔥 {streak} day streak
+            </span>
+          )}
 
           {activeTag && (
             <button
@@ -1020,7 +1615,7 @@ ${stuck
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => setSearchQuery('')}
+                onClick={() => setSearchQuery("")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-[#555] hover:text-[#aaa] transition text-xs"
                 aria-label="Clear search"
               >
@@ -1078,10 +1673,16 @@ ${stuck
           <button
             type="button"
             onClick={handleVoice}
-            aria-label={listening ? "Stop voice task recording" : "Create task with voice"}
+            aria-label={
+              listening ? "Stop voice task recording" : "Create task with voice"
+            }
             aria-pressed={listening}
             className={`text-lg transition ${listening ? "text-red-400 animate-pulse" : "text-[#555] hover:text-[#aaa]"}`}
-            title={listening ? "Stop voice recording" : "Create task with voice (Space)"}
+            title={
+              listening
+                ? "Stop voice recording"
+                : "Create task with voice (Space)"
+            }
           >
             🎤
           </button>
@@ -1090,11 +1691,14 @@ ${stuck
           <button
             type="button"
             onClick={() => setFocusMode((v) => !v)}
-            title={focusMode ? "Disable focus mode" : "Focus mode (hide completed)"}
-            className={`p-1.5 rounded-lg border text-xs transition ${focusMode
+            title={
+              focusMode ? "Disable focus mode" : "Focus mode (hide completed)"
+            }
+            className={`p-1.5 rounded-lg border text-xs transition ${
+              focusMode
                 ? "bg-blue-500/10 border-blue-500 text-blue-400"
                 : "border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
-              }`}
+            }`}
           >
             <TargetIcon className="w-3.5 h-3.5" />
           </button>
@@ -1165,16 +1769,26 @@ ${stuck
             <DownloadIcon className="w-3.5 h-3.5" />
           </button>
 
-          {/* Sprint retrospective generator */}
+                    {/* Sprint retrospective generator */}
           <button
             type="button"
             onClick={generateRetro}
             title="Copy a sprint retrospective to the clipboard"
             className="px-2.5 py-1.5 rounded-lg border border-zinc-800 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
           >
-            {retroCopied ? "✅ Copied!" : "📝 Generate Retro"}
+            {retroCopied ? "Copied!" : "Generate Retro"}
           </button>
 
+          {/* Export board as PDF */}
+          <button
+            type="button"
+            onClick={handleExportPDF}
+            title="Export board as PDF"
+            aria-label="Export board as PDF"
+            className="p-1.5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+          >
+            <PrinterIcon className="w-3.5 h-3.5" />
+          </button>
           {/* Clear Done */}
           <button
             type="button"
@@ -1229,8 +1843,11 @@ ${stuck
                 onClick={() => handleSelectManualTheme(name)}
                 style={{ backgroundColor: t.accent }}
                 title={`${t.name} theme`}
-                className={`w-3 h-3 rounded-full transition-transform ${!autoThemeEnabled && theme === name ? "ring-2 ring-white scale-110" : "opacity-60 hover:opacity-100"
-                  }`}
+                className={`w-3 h-3 rounded-full transition-transform ${
+                  !autoThemeEnabled && theme === name
+                    ? "ring-2 ring-white scale-110"
+                    : "opacity-60 hover:opacity-100"
+                }`}
               />
             ))}
           </div>
@@ -1238,13 +1855,22 @@ ${stuck
           <button
             type="button"
             onClick={handleToggleAutoTheme}
-            aria-label={autoThemeEnabled ? "Disable automatic time-based theme" : "Enable automatic time-based theme"}
+            aria-label={
+              autoThemeEnabled
+                ? "Disable automatic time-based theme"
+                : "Enable automatic time-based theme"
+            }
             aria-pressed={autoThemeEnabled}
-            title={autoThemeEnabled ? `Auto theme: ${moodTheme.name}${weatherMood ? ` · ${weatherMood} weather` : " · time only"}` : "Automatically change the theme based on time of day"}
-            className={`p-1.5 rounded-lg border transition ${autoThemeEnabled
-              ? "border-[var(--accent)] bg-[var(--accent-10)] text-[var(--accent)]"
-              : "border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
-              }`}
+            title={
+              autoThemeEnabled
+                ? `Auto theme: ${moodTheme.name}${weatherMood ? ` · ${weatherMood} weather` : " · time only"}`
+                : "Automatically change the theme based on time of day"
+            }
+            className={`p-1.5 rounded-lg border transition ${
+              autoThemeEnabled
+                ? "border-[var(--accent)] bg-[var(--accent-10)] text-[var(--accent)]"
+                : "border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+            }`}
           >
             <SparklesIcon className="w-3.5 h-3.5" />
           </button>
@@ -1252,19 +1878,26 @@ ${stuck
           <button
             type="button"
             onClick={handleUseLocalWeather}
-            disabled={!autoThemeEnabled || weatherStatus === "requesting" || weatherStatus === "loading"}
+            disabled={
+              !autoThemeEnabled ||
+              weatherStatus === "requesting" ||
+              weatherStatus === "loading"
+            }
             aria-label="Use local weather in automatic theme"
-            title={!autoThemeEnabled
-              ? "Enable automatic theme first to use local weather"
-              : weatherStatus === "ready"
-                ? "Refresh weather theme using your approximate location"
-                : weatherStatus === "unavailable"
-                  ? "Weather unavailable. Click to retry, or keep using the time-based theme"
-                  : "Use current local weather (your approximate location is sent to Open-Meteo)"}
-            className={`p-1.5 rounded-lg border transition disabled:opacity-40 disabled:cursor-not-allowed ${weatherStatus === "ready"
-              ? "border-[var(--accent)] text-[var(--accent)]"
-              : "border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
-              }`}
+            title={
+              !autoThemeEnabled
+                ? "Enable automatic theme first to use local weather"
+                : weatherStatus === "ready"
+                  ? "Refresh weather theme using your approximate location"
+                  : weatherStatus === "unavailable"
+                    ? "Weather unavailable. Click to retry, or keep using the time-based theme"
+                    : "Use current local weather (your approximate location is sent to Open-Meteo)"
+            }
+            className={`p-1.5 rounded-lg border transition disabled:opacity-40 disabled:cursor-not-allowed ${
+              weatherStatus === "ready"
+                ? "border-[var(--accent)] text-[var(--accent)]"
+                : "border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+            }`}
           >
             <CloudIcon className="w-3.5 h-3.5" />
           </button>
@@ -1332,7 +1965,8 @@ ${stuck
                 Sprint Burndown
               </span>
               <span className="text-[11px] text-zinc-400">
-                ({tasks.filter((t) => t.status === "done").length}/{tasks.length} done)
+                ({tasks.filter((t) => t.status === "done").length}/
+                {tasks.length} done)
               </span>
             </div>
             <div className="flex items-center gap-3 text-[11px] text-zinc-400">
@@ -1388,7 +2022,11 @@ ${stuck
       {/* Main Kanban Workspace */}
       <main className="flex-1 overflow-hidden relative">
         <BoardZoomContext.Provider value={boardZoom}>
-          <KanbanBoard onSelectTask={setSelectedTask} focusMode={focusMode} onTaskCompleted={recordTaskCompletion} />
+          <KanbanBoard
+            onSelectTask={setSelectedTask}
+            focusMode={focusMode}
+            onTaskCompleted={recordTaskCompletion}
+          />
         </BoardZoomContext.Provider>
       </main>
 
@@ -1425,7 +2063,7 @@ ${stuck
           onClick={() => {
             window.scrollTo({ top: 0, behavior: "smooth" });
             const scrollContainers = document.querySelectorAll(
-              ".overflow-y-auto, .overflow-y-scroll, .board"
+              ".overflow-y-auto, .overflow-y-scroll, .board",
             );
             scrollContainers.forEach((container) => {
               container.scrollTo({ top: 0, behavior: "smooth" });
@@ -1477,9 +2115,12 @@ ${stuck
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-blue-600 font-mono-code"
               />
               <p className="text-[10px] text-zinc-500 leading-relaxed font-mono-code">
-                DevBoard POSTs <span className="text-zinc-400">{"{ event, task, timestamp }"}</span> to this
-                URL when one of your tasks is updated. Use it with Zapier, n8n or
-                your own endpoint. Leave empty to turn it off.
+                DevBoard POSTs{" "}
+                <span className="text-zinc-400">
+                  {"{ event, task, timestamp }"}
+                </span>{" "}
+                to this URL when one of your tasks is updated. Use it with
+                Zapier, n8n or your own endpoint. Leave empty to turn it off.
               </p>
               <button
                 type="button"
@@ -1520,31 +2161,45 @@ ${stuck
             <div className="p-5 flex flex-col gap-3 text-xs font-mono-code">
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Create new task</span>
-                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">N</kbd>
+                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">
+                  N
+                </kbd>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Create task with voice</span>
-                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">Space</kbd>
+                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">
+                  Space
+                </kbd>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Search tasks</span>
-                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">/</kbd>
+                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">
+                  /
+                </kbd>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Move between tasks</span>
-                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">←↑↓→</kbd>
+                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">
+                  ←↑↓→
+                </kbd>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Open focused task</span>
-                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">Enter</kbd>
+                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">
+                  Enter
+                </kbd>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Close modal</span>
-                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">ESC</kbd>
+                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">
+                  ESC
+                </kbd>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Toggle shortcuts help</span>
-                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">?</kbd>
+                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">
+                  ?
+                </kbd>
               </div>
             </div>
           </div>
