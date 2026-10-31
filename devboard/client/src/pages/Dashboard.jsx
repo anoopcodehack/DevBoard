@@ -855,7 +855,6 @@ ${stuck
     }};
 
   const handleExportPDF = () => {
-    //console.table(tasks.map(({ title, status }) => ({ title, status })));
     const doc = new jsPDF({
       orientation: "landscape",
       unit: "mm",
@@ -867,195 +866,523 @@ ${stuck
 
     const margin = 12;
     const contentWidth = pageWidth - margin * 2;
-    const bottomLimit = pageHeight - 25;
+    const columnGap = 5;
+    const columnWidth = (contentWidth - columnGap * 3) / 4;
+
+    const boardTop = 65;
+    const bottomLimit = pageHeight - 18;
+    const columnHeight = bottomLimit - boardTop;
 
     const columns = [
-      { status: "backlog", label: "BACKLOG" },
-      { status: "inprogress", label: "IN PROGRESS" },
-      { status: "review", label: "IN REVIEW" },
-      { status: "done", label: "COMPLETED" },
+      {
+        status: "backlog",
+        label: "TO DO",
+        color: [145, 150, 160],
+        light: [240, 242, 245],
+      },
+      {
+        status: "inprogress",
+        label: "IN PROGRESS",
+        color: [65, 125, 220],
+        light: [230, 239, 253],
+      },
+      {
+        status: "review",
+        label: "IN REVIEW",
+        color: [205, 155, 55],
+        light: [251, 243, 224],
+      },
+      {
+        status: "done",
+        label: "DONE",
+        color: [55, 155, 105],
+        light: [228, 245, 235],
+      },
     ];
-
-    let y = 20;
-
-    // Document title
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.setTextColor(35, 40, 55);
-    doc.text("DevBoard", margin, y);
-
-    y += 9;
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(110, 115, 130);
-    doc.text("Project Board Export", margin, y);
-
-    y += 7;
-    doc.setFontSize(9);
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, y);
-
-    y += 12;
-
-    // Summary
-    doc.setFillColor(245, 246, 250);
-    doc.roundedRect(margin, y, contentWidth, 14, 2, 2, "F");
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(55, 60, 75);
-    doc.text(`Total Tasks: ${tasks.length}`, margin + 5, y + 9);
-
-    y += 23;
 
     const normalizeStatus = (value) =>
       String(value || "")
         .toLowerCase()
         .replace(/[\s_-]/g, "");
 
-    // Export each Kanban column
-    const boardTop = 68;
-    const columnGap = 5;
-    const columnWidth = (contentWidth - columnGap * 3) / 4;
-    const columnHeight = bottomLimit - boardTop;
+    const groupedTasks = columns.map((column) =>
+      tasks.filter(
+        (task) =>
+          normalizeStatus(task.status) === normalizeStatus(column.status),
+      ),
+    );
 
-    columns.forEach(({ status, label }, index) => {
-      const columnX = margin + index * (columnWidth + columnGap);
+    const totalTasks = tasks.length;
+    const completedTasks = groupedTasks[3].length;
+    const inProgressTasks = groupedTasks[1].length;
+    const completionRate = totalTasks
+      ? Math.round((completedTasks / totalTasks) * 100)
+      : 0;
 
-      const columnTasks = tasks.filter(
-        (task) => normalizeStatus(task.status) === normalizeStatus(status),
-      );
+    const priorityStyles = {
+      high: {
+        bg: [252, 226, 226],
+        text: [185, 55, 55],
+      },
+      medium: {
+        bg: [254, 249, 195],
+        text: [146, 105, 25],
+      },
+      low: {
+        bg: [219, 234, 254],
+        text: [45, 90, 190],
+      },
+    };
 
-      // Column background
-      doc.setFillColor(248, 249, 251);
-      doc.setDrawColor(235, 237, 241);
-      doc.roundedRect(columnX, boardTop, columnWidth, columnHeight, 3, 3, "FD");
+    const tagColors = [
+      { bg: [232, 240, 254], text: [55, 100, 175] },
+      { bg: [237, 231, 250], text: [115, 80, 165] },
+      { bg: [230, 244, 238], text: [55, 125, 90] },
+    ];
 
-      // Column heading
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(45, 52, 65);
-      doc.text(label, columnX + 4, boardTop + 10);
+    // Truncate text without cutting words unnecessarily.
+    const getLimitedLines = (text, width, maxLines) => {
+      const fullLines = doc.splitTextToSize(String(text || ""), width);
 
-      // Task count
+      if (fullLines.length <= maxLines) {
+        return fullLines;
+      }
+
+      const result = fullLines.slice(0, maxLines);
+      let lastLine = result[maxLines - 1].trimEnd();
+
+      while (
+        lastLine.length > 0 &&
+        doc.getTextWidth(lastLine + "...") > width
+      ) {
+        lastLine = lastLine.slice(0, -1).trimEnd();
+      }
+
+      result[maxLines - 1] = lastLine + "...";
+
+      return result;
+    };
+
+    // Prepare tag badges and wrap them into rows.
+    const prepareTags = (tags, maxWidth) => {
+      const tagList = Array.isArray(tags)
+        ? tags
+        : typeof tags === "string"
+          ? tags
+              .split(",")
+              .map((tag) => tag.trim())
+              .filter(Boolean)
+          : [];
+
       doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+
+      const rows = [[]];
+      let currentWidth = 0;
+
+      tagList.forEach((tag) => {
+        const label =
+          String(tag).length > 16
+            ? String(tag).slice(0, 15) + "..."
+            : String(tag);
+
+        const badgeWidth = Math.min(doc.getTextWidth(label) + 5, 28);
+
+        if (
+          currentWidth + badgeWidth > maxWidth &&
+          rows[rows.length - 1].length > 0
+        ) {
+          rows.push([]);
+          currentWidth = 0;
+        }
+
+        rows[rows.length - 1].push({
+          label,
+          width: badgeWidth,
+        });
+
+        currentWidth += badgeWidth + 1.5;
+      });
+
+      return rows.filter((row) => row.length > 0);
+    };
+
+    // Draw the document header and summary.
+    const drawHeader = () => {
+      let y = 18;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(21);
+      doc.setTextColor(35, 40, 55);
+      doc.text("DevBoard", margin, y);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(110, 115, 130);
+      doc.text("PROJECT BOARD REPORT", margin, y + 7);
+
       doc.setFontSize(8);
-      doc.setTextColor(120, 125, 135);
       doc.text(
-        `${columnTasks.length} ${columnTasks.length === 1 ? "task" : "tasks"}`,
-        columnX + columnWidth - 4,
-        boardTop + 10,
+        `Generated: ${new Date().toLocaleDateString()}`,
+        pageWidth - margin,
+        y + 2,
         { align: "right" },
       );
 
-      let cardY = boardTop + 17;
+      // Summary panel.
+      const summaryY = 30;
+      const summaryHeight = 27;
+      const metricWidth = contentWidth / 4;
 
-      columnTasks.forEach((task) => {
-        const cardPadding = 4;
-        const cardWidth = columnWidth - 6;
-        const cardX = columnX + 3;
+      doc.setFillColor(247, 248, 251);
+      doc.setDrawColor(235, 237, 242);
+      doc.roundedRect(
+        margin,
+        summaryY,
+        contentWidth,
+        summaryHeight,
+        2.5,
+        2.5,
+        "FD",
+      );
 
-        const titleLines = doc.splitTextToSize(
-          task.title || "Untitled task",
-          cardWidth - cardPadding * 2 - 3,
-        );
+      const metrics = [
+        { value: totalTasks, label: "TOTAL TASKS" },
+        { value: completedTasks, label: "COMPLETED" },
+        { value: `${completionRate}%`, label: "COMPLETION" },
+        { value: inProgressTasks, label: "IN PROGRESS" },
+      ];
 
-        const priority = String(task.priority || "normal").toLowerCase();
+      metrics.forEach((metric, index) => {
+        const x = margin + index * metricWidth;
 
-        const priorityColors = {
-          high: [252, 226, 226],
-          medium: [254, 249, 195],
-          low: [219, 234, 254],
-        };
-
-        const priorityTextColors = {
-          high: [185, 55, 55],
-          medium: [146, 105, 25],
-          low: [45, 90, 190],
-        };
-
-        const badgeColor = priorityColors[priority] || [235, 237, 241];
-        const badgeTextColor = priorityTextColors[priority] || [90, 95, 105];
-
-        const tags = Array.isArray(task.tags)
-          ? task.tags.join(", ")
-          : task.tags || "";
-
-        const metadata = [
-          `Priority: ${priority}`,
-          tags ? `Tags: ${tags}` : "",
-          task.createdAt ? `Created: ${formatCsvDate(task.createdAt)}` : "",
-        ]
-          .filter(Boolean)
-          .join(" | ");
-
-        const metadataLines = doc.splitTextToSize(
-          metadata,
-          cardWidth - cardPadding * 2,
-        );
-
-        const cardHeight =
-          10 + titleLines.length * 4.5 + metadataLines.length * 3.5 + 5;
-
-        // Task card
-        doc.setFillColor(255, 255, 255);
-        doc.setDrawColor(225, 228, 233);
-        doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 2.5, 2.5, "FD");
-
-        // Task title
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9);
-        doc.setTextColor(35, 40, 50);
-        doc.text(titleLines, cardX + cardPadding, cardY + 7);
-
-        // Priority badge
-        const badgeWidth = 15;
-        const badgeX = cardX + cardWidth - badgeWidth - cardPadding;
-
-        doc.setFillColor(...badgeColor);
-        doc.roundedRect(badgeX, cardY + 3, badgeWidth, 6, 2, 2, "F");
+        if (index > 0) {
+          doc.setDrawColor(225, 228, 234);
+          doc.line(x, summaryY + 5, x, summaryY + summaryHeight - 5);
+        }
 
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(6.5);
-        doc.setTextColor(...badgeTextColor);
-        doc.text(priority, badgeX + badgeWidth / 2, cardY + 7, {
+        doc.setFontSize(16);
+        doc.setTextColor(40, 48, 65);
+        doc.text(String(metric.value), x + 6, summaryY + 12);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(125, 130, 140);
+        doc.text(metric.label, x + 6, summaryY + 21);
+      });
+    };
+
+    // Draw the four column panels.
+    const drawColumns = () => {
+      columns.forEach((column, index) => {
+        const x = margin + index * (columnWidth + columnGap);
+
+        doc.setFillColor(248, 249, 251);
+        doc.setDrawColor(233, 235, 240);
+        doc.roundedRect(x, boardTop, columnWidth, columnHeight, 3, 3, "FD");
+
+        // Status indicator.
+        doc.setFillColor(...column.color);
+        doc.circle(x + 5, boardTop + 9, 1.5, "F");
+
+        // Column title.
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8.5);
+        doc.setTextColor(45, 52, 65);
+        doc.text(column.label, x + 9, boardTop + 10);
+
+        // Task count badge.
+        const count = groupedTasks[index].length;
+        const countText = String(count);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7);
+
+        const badgeWidth = doc.getTextWidth(countText) + 6;
+        const badgeX = x + columnWidth - badgeWidth - 3;
+
+        doc.setFillColor(...column.light);
+        doc.roundedRect(badgeX, boardTop + 4.5, badgeWidth, 7, 2, 2, "F");
+
+        doc.setTextColor(...column.color);
+        doc.text(countText, badgeX + badgeWidth / 2, boardTop + 9.3, {
           align: "center",
         });
 
-        // Task metadata
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(7);
-        doc.setTextColor(110, 115, 125);
-        doc.text(
-          metadataLines,
-          cardX + cardPadding,
-          cardY + 10 + titleLines.length * 4.5,
-        );
+        // Header separator.
+        doc.setDrawColor(230, 232, 237);
+        doc.line(x + 3, boardTop + 15, x + columnWidth - 3, boardTop + 15);
+      });
+    };
 
-        cardY += cardHeight + 4;
+    // Prepare one task card.
+    const prepareCard = (task, cardWidth) => {
+      const padding = 3.5;
+      const priority = String(task.priority || "normal").toLowerCase();
+
+      const priorityStyle = priorityStyles[priority] || {
+        bg: [235, 237, 241],
+        text: [90, 95, 105],
+      };
+
+      const priorityLabel = priority.toUpperCase();
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6);
+
+      const priorityWidth = Math.max(13, doc.getTextWidth(priorityLabel) + 5);
+
+      const titleWidth = cardWidth - padding * 2 - priorityWidth - 3;
+
+      doc.setFontSize(8.5);
+
+      const titleLines = getLimitedLines(
+        task.title || "Untitled task",
+        titleWidth,
+        2,
+      );
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+
+      const descriptionLines = task.description
+        ? getLimitedLines(task.description, cardWidth - padding * 2, 3)
+        : [];
+
+      const tagRows = prepareTags(task.tags, cardWidth - padding * 2);
+
+      const createdDate = task.createdAt ? formatCsvDate(task.createdAt) : "";
+
+      const titleHeight = titleLines.length * 3.8;
+      const descriptionHeight = descriptionLines.length * 3.2;
+
+      const descriptionTagGap =
+        descriptionLines.length > 0 && tagRows.length > 0 ? 3 : 0;
+
+      const tagHeight = tagRows.length * 6;
+
+      const separatorHeight =
+        descriptionLines.length > 0 && (tagRows.length > 0 || createdDate)
+          ? 3
+          : 0;
+
+      const dateHeight = createdDate ? 5 : 0;
+
+      const cardHeight =
+        7 +
+        titleHeight +
+        descriptionHeight +
+        descriptionTagGap +
+        separatorHeight +
+        tagHeight +
+        dateHeight;
+
+      return {
+        padding,
+        priority,
+        priorityLabel,
+        priorityWidth,
+        priorityStyle,
+        titleLines,
+        descriptionLines,
+        tagRows,
+        createdDate,
+        titleHeight,
+        descriptionHeight,
+        descriptionTagGap,
+        separatorHeight,
+        tagHeight,
+        dateHeight,
+        cardHeight,
+      };
+    };
+
+    // Draw one complete task card.
+    const drawCard = (task, x, y, width, layout) => {
+      const {
+        padding,
+        priorityLabel,
+        priorityWidth,
+        priorityStyle,
+        titleLines,
+        descriptionLines,
+        tagRows,
+        createdDate,
+        titleHeight,
+        descriptionHeight,
+        separatorHeight,
+      } = layout;
+
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(225, 228, 234);
+      doc.roundedRect(x, y, width, layout.cardHeight, 2, 2, "FD");
+
+      // Task title.
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(35, 40, 50);
+      doc.text(titleLines, x + padding, y + 6.5);
+
+      // Priority badge.
+      const badgeX = x + width - priorityWidth - padding;
+
+      doc.setFillColor(...priorityStyle.bg);
+      doc.roundedRect(badgeX, y + 2.5, priorityWidth, 5.5, 1.8, 1.8, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6);
+      doc.setTextColor(...priorityStyle.text);
+      doc.text(priorityLabel, badgeX + priorityWidth / 2, y + 6.2, {
+        align: "center",
       });
 
-      // Empty column message
-      if (columnTasks.length === 0) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-        doc.setTextColor(150, 155, 165);
-        doc.text("No tasks", columnX + 4, boardTop + 25);
-      }
-    });
+      let contentY = y + 6.5 + titleHeight;
 
-    // Add page numbers
+      // Description.
+      if (descriptionLines.length > 0) {
+        contentY += 1;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+        doc.setTextColor(100, 105, 115);
+        doc.text(descriptionLines, x + padding, contentY);
+
+        contentY += descriptionHeight + 2;
+      }
+
+      // Individual tag badges.
+      if (tagRows.length > 0) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(6.5);
+
+        tagRows.forEach((row, rowIndex) => {
+          let tagX = x + padding;
+          const tagY = contentY + rowIndex * 6;
+
+          row.forEach((tag, tagIndex) => {
+            const color = tagColors[tagIndex % tagColors.length];
+
+            doc.setFillColor(...color.bg);
+            console.log("Tag badge dimensions:", {
+              tagX,
+              tagY,
+              width: tag.width,
+              height: 4.5,
+            });
+            doc.roundedRect(tagX, tagY - 3.2, tag.width, 4.5, 1.3, 1.3, "F");
+
+            doc.setTextColor(...color.text);
+            doc.text(tag.label, tagX + tag.width / 2, tagY - 0.2, {
+              align: "center",
+            });
+
+            tagX += tag.width + 1.5;
+          });
+        });
+
+        contentY += layout.tagHeight;
+      }
+
+      // Subtle separator.
+      if (separatorHeight > 0) {
+        contentY -= 3;
+
+        doc.setDrawColor(235, 237, 241);
+        doc.line(x + padding, contentY, x + width - padding, contentY);
+
+        contentY += 2;
+      }
+
+      // Creation date.
+      if (createdDate) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(6.5);
+        doc.setTextColor(130, 135, 145);
+        doc.text(`Created: ${createdDate}`, x + padding, contentY + 1);
+      }
+    };
+
+    // Track the next unprinted task in each column.
+    const taskIndexes = columns.map(() => 0);
+
+    let pageNumber = 0;
+
+    while (
+      taskIndexes.some(
+        (taskIndex, index) => taskIndex < groupedTasks[index].length,
+      ) ||
+      pageNumber === 0
+    ) {
+      if (pageNumber > 0) {
+        doc.addPage();
+      }
+
+      pageNumber += 1;
+
+      drawHeader();
+      drawColumns();
+
+      // Render tasks independently in each column.
+      columns.forEach((column, index) => {
+        const columnX = margin + index * (columnWidth + columnGap);
+
+        const cardWidth = columnWidth - 6;
+        const cardX = columnX + 3;
+
+        let cardY = boardTop + 19;
+
+        const columnTasks = groupedTasks[index];
+        let taskIndex = taskIndexes[index];
+
+        if (columnTasks.length === 0) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7.5);
+          doc.setTextColor(150, 155, 165);
+          doc.text("No tasks in this column", columnX + 4, boardTop + 27);
+          return;
+        }
+
+        while (taskIndex < columnTasks.length) {
+          const task = columnTasks[taskIndex];
+
+          const layout = prepareCard(task, cardWidth);
+
+          // Move the entire card to the next page if necessary.
+          if (cardY + layout.cardHeight > bottomLimit - 3) {
+            break;
+          }
+
+          drawCard(task, cardX, cardY, cardWidth, layout);
+
+          cardY += layout.cardHeight + 3.5;
+          taskIndex += 1;
+        }
+
+        taskIndexes[index] = taskIndex;
+      });
+    }
+
+    // Add consistent footers to every page.
     const totalPages = doc.internal.getNumberOfPages();
 
     for (let page = 1; page <= totalPages; page += 1) {
       doc.setPage(page);
+
+      doc.setDrawColor(232, 234, 239);
+      doc.line(margin, pageHeight - 14, pageWidth - margin, pageHeight - 14);
+
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(145, 145, 155);
+      doc.setFontSize(7);
+      doc.setTextColor(140, 145, 155);
+
+      doc.text("DevBoard | Project Board Export", margin, pageHeight - 8);
+
       doc.text(
-        `DevBoard Export  |  Page ${page} of ${totalPages}`,
-        pageWidth / 2,
-        pageHeight - 10,
-        { align: "center" },
+        `Page ${page} of ${totalPages}`,
+        pageWidth - margin,
+        pageHeight - 8,
+        { align: "right" },
       );
     }
 
