@@ -253,6 +253,29 @@ const Dashboard = () => {
     recentActivity,
   } = useBoard();
   const { stars, loading: starsLoading } = useGithubStars();
+
+  const calculateDebtScore = () => {
+    const debtTasks = tasks.filter(t => 
+      t.tags?.some(tag => 
+        ['tech-debt', 'refactor', 'hack', 'fixme', 'legacy'].includes(tag.toLowerCase())
+      ) && t.status !== 'done'
+    );
+
+    const score = debtTasks.reduce((acc, t) => {
+      const weight = t.priority === 'high' ? 3 : t.priority === 'medium' ? 2 : 1;
+      return acc + weight;
+    }, 0);
+
+    const level = score === 0 ? 'clean' 
+                : score < 5 ? 'manageable' 
+                : score < 10 ? 'concerning' 
+                : 'critical';
+
+    return { score, level, count: debtTasks.length };
+  };
+
+  const debt = calculateDebtScore();
+
   const [streak, setStreak] = useState(calculateStreak);
   const [showBurndown, setShowBurndown] = useState(false);
 
@@ -1584,6 +1607,20 @@ ${stuck
             </span>
           )}
 
+          {debt.count > 0 && (
+            <span 
+              title={`Tech Debt Level: ${debt.level} (${debt.count} active tasks)`}
+              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono-code border ${
+                debt.level === 'critical' 
+                  ? 'bg-red-500/10 text-red-400 border-red-500/30' 
+                  : debt.level === 'concerning' 
+                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' 
+                  : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+              }`}
+            >
+              🏦 debt: {debt.score}
+            </span>
+          )}
           {activeTag && (
             <button
               onClick={() => setActiveTag(null)}
