@@ -39,6 +39,7 @@ export const BoardProvider = ({ children }) => {
   const [activeSprint, setActiveSprint] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [onlineUsers, setOnlineUsers] = useState(1);
+  const [recentActivity, setRecentActivity] = useState([]);
   const [error, setError] = useState(null);
   const [activeTag, setActiveTag] = useState(null);
 
@@ -151,6 +152,11 @@ export const BoardProvider = ({ children }) => {
       );
     });
 
+    // Live team activity for the navbar ticker
+    socket.on("activity:new", (activity) => {
+      setRecentActivity((prev) => [activity, ...prev].slice(0, 10));
+    });
+
     return () => {
       socket.disconnect();
     };
@@ -251,6 +257,7 @@ export const BoardProvider = ({ children }) => {
     setAllTasks([]);
     setActiveSprint(null);
     setSearchQuery("");
+    setRecentActivity([]);
   };
 
   const logoutAll = async () => {
@@ -317,6 +324,7 @@ export const BoardProvider = ({ children }) => {
         loading,
         user,
         onlineUsers,
+        recentActivity,
         searchQuery,
         setSearchQuery,
         activeTag,
