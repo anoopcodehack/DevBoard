@@ -95,6 +95,19 @@ const estimateToPomodoros = (estimate) => {
   return map[estimate] || null;
 };
 
+// Review complexity (#609): how much code a reviewer is looking at, from the
+// total lines across the task's snippets. Empty snippets don't count.
+const getComplexity = (task) => {
+  const totalLines = (task.snippets || []).reduce((sum, snippet) => {
+    const code = snippet?.code?.trim();
+    return code ? sum + code.split("\n").length : sum;
+  }, 0);
+  if (!totalLines) return null;
+  if (totalLines < 20) return { label: "Quick review", color: "text-emerald-400", lines: totalLines };
+  if (totalLines < 50) return { label: "Medium review", color: "text-amber-400", lines: totalLines };
+  return { label: "Deep review", color: "text-red-400", lines: totalLines };
+};
+
 const TaskCard = ({
   task,
   index,
@@ -246,6 +259,7 @@ const TaskCard = ({
   today.setHours(0, 0, 0, 0);
   const dueDate = task.dueDate ? new Date(task.dueDate) : null;
   const isOverdue = dueDate && dueDate < today && task.status !== "done";
+  const complexity = task.status === "review" ? getComplexity(task) : null;
 
   const priorityMeta = PRIORITY_BADGES[task.priority?.toLowerCase()] || PRIORITY_BADGES.medium;
   const zoom = useBoardZoom();
@@ -562,6 +576,17 @@ const TaskCard = ({
                 >
                   <TimerIcon className="w-2.5 h-2.5 text-zinc-500" />
                   <span>{actualPomodoros}/{estimatedPomodoros}</span>
+                </span>
+              )}
+
+              {/* Review complexity, only where a review is waiting */}
+              {complexity && (
+                <span
+                  title={`${complexity.lines} line${complexity.lines !== 1 ? "s" : ""} of code in snippets`}
+                  className={`inline-flex items-center gap-1 ${complexity.color}`}
+                >
+                  <CodeIcon className="w-2.5 h-2.5" />
+                  <span>{complexity.label}</span>
                 </span>
               )}
 
