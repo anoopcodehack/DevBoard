@@ -1,8 +1,21 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import { toast } from "react-toastify";
 import { useBoard } from "../../context/BoardContext";
 import { timeAgo } from "../../utils/timeAgo";
-import { hasMentions, renderMentions } from "../../utils/mentions";
+import {
+  activeMention,
+  hasMentions,
+  insertMention,
+  mentionSuggestions,
+  renderMentions,
+} from "../../utils/mentions";
 import { columnLimit, isColumnFull } from "../../utils/columnLimits";
 import { QRCodeSVG } from "qrcode.react";
 import {
@@ -151,6 +164,68 @@ const TaskModal = ({
       a.name.localeCompare(b.name),
     );
   }, [allTasks]);
+  const [mention, setMention] = useState(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const descriptionRef = useRef(null);
+  const pendingCaret = useRef(null);
+  const suggestions = useMemo(
+    () => (mention ? mentionSuggestions(teamMembers, mention.query) : []),
+    [mention, teamMembers],
+  );
+
+  // A controlled textarea drops the caret to the end when its value is replaced.
+  useLayoutEffect(() => {
+    if (pendingCaret.current === null || !descriptionRef.current) return;
+    descriptionRef.current.setSelectionRange(
+      pendingCaret.current,
+      pendingCaret.current,
+    );
+    pendingCaret.current = null;
+  }, [form.description]);
+
+  const syncMention = (textarea) => {
+    const caret = textarea.selectionStart;
+    const next =
+      caret === textarea.selectionEnd
+        ? activeMention(textarea.value, caret)
+        : null;
+    if (mention?.start === next?.start && mention?.query === next?.query) return;
+    setMention(next);
+    setMentionIndex(0);
+  };
+
+  const pickMention = (member) => {
+    const textarea = descriptionRef.current;
+    const result = insertMention(
+      form.description,
+      mention,
+      textarea.selectionStart,
+      member.handle,
+    );
+    setMention(null);
+    if (result.text.length > DESCRIPTION_MAX_LENGTH) return;
+    pendingCaret.current = result.caret;
+    setForm((current) => ({ ...current, description: result.text }));
+  };
+
+  const handleDescriptionKeyDown = (e) => {
+    if (!suggestions.length || e.nativeEvent.isComposing) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const step = e.key === "ArrowDown" ? 1 : -1;
+      setMentionIndex(
+        (index) => (index + step + suggestions.length) % suggestions.length,
+      );
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      pickMention(suggestions[Math.min(mentionIndex, suggestions.length - 1)]);
+    } else if (e.key === "Escape") {
+      // Closes the list only. Without this the window listener closes the modal.
+      e.stopPropagation();
+      setMention(null);
+    }
+  };
+
   const isDirty = Object.keys(initialForm).some(
     (key) =>
       key !== "assignee" &&
@@ -591,16 +666,59 @@ ${task.snippets
               </button>
             </div>
 
-            <textarea
-              placeholder="Description (optional) or generate with AI..."
-              maxLength={DESCRIPTION_MAX_LENGTH}
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-              rows={3}
-              className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] resize-none"
-            />
+            <div className="relative">
+              <textarea
+                ref={descriptionRef}
+                placeholder="Description (optional) or generate with AI..."
+                maxLength={DESCRIPTION_MAX_LENGTH}
+                value={form.description}
+                onChange={(e) => {
+                  setForm({ ...form, description: e.target.value });
+                  syncMention(e.target);
+                }}
+                onSelect={(e) => syncMention(e.target)}
+                onKeyDown={handleDescriptionKeyDown}
+                onBlur={() => setMention(null)}
+                rows={3}
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={suggestions.length > 0}
+                className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)] resize-none"
+              />
+              {suggestions.length > 0 && (
+                <ul
+                  role="listbox"
+                  aria-label="Mention suggestions"
+                  className="absolute left-0 right-0 top-full z-20 -mt-1 max-h-48 overflow-y-auto bg-[var(--bg-card)] border border-[var(--border-primary)] rounded-lg shadow-lg py-1"
+                >
+                  {suggestions.map((member, index) => (
+                    <li key={member._id} role="option" aria-selected={index === mentionIndex}>
+                      <button
+                        type="button"
+                        // mousedown would blur the textarea and close the list first
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          pickMention(member);
+                        }}
+                        onMouseEnter={() => setMentionIndex(index)}
+                        className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 ${
+                          index === mentionIndex
+                            ? "bg-[var(--accent-15)] text-[var(--text-primary)]"
+                            : "text-[var(--text-secondary)]"
+                        }`}
+                      >
+                        <span className="font-medium">@{member.handle}</span>
+                        {member.handle !== member.name && (
+                          <span className="text-[var(--text-muted)] truncate">
+                            {member.name}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
             <div className="flex items-center justify-between mt-1">
               <p className="text-[10px] text-[var(--text-secondary)]">
