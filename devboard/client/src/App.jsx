@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import TaskPage from "./pages/TaskPage";
 import Analytics from "./pages/Analytics";
+import OfflineBanner from "./components/common/OfflineBanner";
 
 const PrivateRoute = ({ children }) => {
   const { user } = useBoard();
@@ -26,6 +27,7 @@ const AppRoutes = () => (
 
 const App = () => (
   <BoardProvider>
+    <OfflineBanner />
     <BrowserRouter>
       <AppRoutes />
       <ToastContainer position="bottom-right" theme="dark" autoClose={2000} />
