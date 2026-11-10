@@ -170,15 +170,6 @@ const KanbanBoard = ({
       return;
     }
 
-    if (
-      destination.droppableId === "done" &&
-      source.droppableId !== "done"
-    ) {
-      confetti({ particleCount: 70, spread: 60, origin: { y: 0.8 } });
-      playDoneSound();
-      onTaskCompleted?.();
-    }
-
     const sourceTasks = Array.from(getTasksByStatus(source.droppableId));
     const destTasks =
       source.droppableId === destination.droppableId
@@ -193,6 +184,15 @@ const KanbanBoard = ({
         : sourceTasks.find(idMatch) || displayedTasks.find(idMatch);
 
     if (!moved) return;
+
+    if (
+      destination.droppableId === "done" &&
+      source.droppableId !== "done"
+    ) {
+      confetti({ particleCount: 70, spread: 60, origin: { y: 0.8 } });
+      playDoneSound();
+      onTaskCompleted?.(moved);
+    }
 
     const sourceIndex = sourceTasks.findIndex(
       (t) => String(t._id) === String(moved._id)

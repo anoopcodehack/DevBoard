@@ -8,6 +8,8 @@ import TaskModal from "../components/Task/TaskModal";
 import Heatmap from "../components/Heatmap/Heatmap";
 import { useBoard } from "../context/BoardContext";
 import { useGithubStars } from "../hooks/useGithubStars";
+import { useXP } from "../hooks/useXP";
+import { XPWidget } from "../components/common/XPWidget";
 import jsPDF from "jspdf";
 import {
   LogoIcon,
@@ -253,6 +255,7 @@ const Dashboard = () => {
     recentActivity,
   } = useBoard();
   const { stars, loading: starsLoading } = useGithubStars();
+  const gamification = useXP();
 
   const calculateDebtScore = () => {
     const debtTasks = tasks.filter(t => 
@@ -341,6 +344,13 @@ const Dashboard = () => {
       setStreak(calculateStreak());
     } catch {
       // Keep the dashboard usable when browser storage is unavailable.
+    }
+  };
+
+  const handleTaskCompleted = (completedTask) => {
+    recordTaskCompletion();
+    if (completedTask) {
+      gamification.awardTaskXP(completedTask);
     }
   };
 
@@ -1571,7 +1581,7 @@ ${stuck
       {/* Top Navbar */}
       <header className="flex flex-col md:flex-row items-stretch md:items-center justify-between px-4 py-2.5 bg-[#0b0c11] border-b border-zinc-800/80 gap-3 shrink-0 z-20">
         {/* Left: Brand & Stats */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center">
               <LogoIcon className="w-4 h-4" />
@@ -1586,6 +1596,9 @@ ${stuck
 
           <div className="h-4 w-[1px] bg-zinc-800" />
 
+          {/* XP & Level Widget */}
+          <XPWidget {...gamification} />
+
           <span
             className={`inline-block text-xs font-mono-code transition-all duration-300 ${
               countAnim ? "scale-125 text-purple-400" : "text-zinc-400"
@@ -1596,7 +1609,7 @@ ${stuck
           {lastVisit && (
             <span
               title={`You last opened this board on ${new Date(lastVisit).toLocaleString()}`}
-              className="text-xs font-mono-code text-zinc-500 no-print"
+              className="text-xs font-mono-code text-zinc-500 no-print hidden 2xl:inline"
             >
               last visit {timeAgo(lastVisit)}
             </span>
@@ -1633,7 +1646,7 @@ ${stuck
         </div>
 
         {/* Center: Search & Filter */}
-        <div className="flex-1 max-w-xl mx-auto w-full no-print">
+        <div className="flex-1 max-w-xs md:max-w-sm lg:max-w-md mx-auto w-full no-print">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-500">
               <SearchIcon className="w-3.5 h-3.5" />
@@ -2093,7 +2106,7 @@ ${stuck
           <KanbanBoard
             onSelectTask={setSelectedTask}
             focusMode={focusMode}
-            onTaskCompleted={recordTaskCompletion}
+            onTaskCompleted={handleTaskCompleted}
           />
         </BoardZoomContext.Provider>
       </main>
@@ -2105,6 +2118,9 @@ ${stuck
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
           onSave={async (data) => {
+            if (data?.status === "done" && selectedTask?.status !== "done") {
+              handleTaskCompleted({ ...selectedTask, ...data });
+            }
             await updateTask(selectedTask._id, data);
             setSelectedTask(null);
           }}
