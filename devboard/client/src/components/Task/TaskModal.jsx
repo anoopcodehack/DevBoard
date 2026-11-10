@@ -9,6 +9,7 @@ import React, {
 import { toast } from "react-toastify";
 import { useBoard } from "../../context/BoardContext";
 import { timeAgo } from "../../utils/timeAgo";
+import { isSessionUrl } from "../../utils/sessionUrl";
 import {
   activeMention,
   hasMentions,
@@ -136,6 +137,11 @@ const TaskModal = ({
         ? String(task.assignee?._id || "")
         : String(task?.assignee || ""),
    blockedBy: Array.isArray(task?.blockedBy) ? task.blockedBy .map((item) => typeof item === "object" && item !== null ? String(item._id ?? item.id ?? "") : String(item), ) .filter(Boolean) : [],
+    // Older tasks may come without the field at all
+    pairProgramming: {
+      enabled: task?.pairProgramming?.enabled || false,
+      sessionUrl: task?.pairProgramming?.sessionUrl || "",
+    },
   };
 
   const [form, setForm] = useState(initialForm);
@@ -236,6 +242,10 @@ const TaskModal = ({
       t.title?.toLowerCase().trim() === form.title.toLowerCase().trim() &&
       t._id !== task?._id,
   );
+  const invalidSessionUrl =
+    form.pairProgramming.enabled &&
+    Boolean(form.pairProgramming.sessionUrl.trim()) &&
+    !isSessionUrl(form.pairProgramming.sessionUrl.trim());
   // Both counters were computed inline before, the word count twice in a row:
   // once for the number and once for the plural of "word".
   const descriptionLength = form.description.length;
@@ -809,6 +819,57 @@ ${task.snippets
             </section>
           )}
 
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 cursor-pointer w-fit">
+              <input
+                type="checkbox"
+                checked={form.pairProgramming.enabled}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    pairProgramming: {
+                      ...form.pairProgramming,
+                      enabled: e.target.checked,
+                    },
+                  })
+                }
+                className="accent-purple-500"
+              />
+              <span className="text-xs text-[var(--text-secondary)]">
+                👥 Pair programming
+              </span>
+            </label>
+
+            {form.pairProgramming.enabled && (
+              <>
+                <input
+                  type="url"
+                  placeholder="VS Code Live Share / CodeTogether URL"
+                  value={form.pairProgramming.sessionUrl}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      pairProgramming: {
+                        ...form.pairProgramming,
+                        sessionUrl: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]"
+                />
+                {invalidSessionUrl ? (
+                  <p className="text-xs text-red-400 -mt-1">
+                    The URL must start with http:// or https://
+                  </p>
+                ) : (
+                  <p className="text-[10px] leading-relaxed text-[var(--text-muted)] -mt-1">
+                    The card shows a link to join this session.
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+
           <div className="flex gap-2">
             <select
               value={form.status}
@@ -1323,7 +1384,9 @@ ${task.snippets
             )}
             <button
               onClick={handleSave}
-              disabled={loading || !form.title.trim() || isDuplicate}
+              disabled={
+                loading || !form.title.trim() || isDuplicate || invalidSessionUrl
+              }
               className="shrink-0 whitespace-nowrap px-4 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-lg font-medium transition disabled:opacity-40 shadow-sm shadow-blue-500/20 font-mono-code"
             >
               {loading
