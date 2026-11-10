@@ -8,6 +8,8 @@ import TaskModal from "../components/Task/TaskModal";
 import Heatmap from "../components/Heatmap/Heatmap";
 import { useBoard } from "../context/BoardContext";
 import { useGithubStars } from "../hooks/useGithubStars";
+import { useXP } from "../hooks/useXP";
+import { XPWidget } from "../components/common/XPWidget";
 import jsPDF from "jspdf";
 import {
   LogoIcon,
@@ -253,6 +255,7 @@ const Dashboard = () => {
     recentActivity,
   } = useBoard();
   const { stars, loading: starsLoading } = useGithubStars();
+  const gamification = useXP();
 
   const calculateDebtScore = () => {
     const debtTasks = tasks.filter(t => 
@@ -341,6 +344,13 @@ const Dashboard = () => {
       setStreak(calculateStreak());
     } catch {
       // Keep the dashboard usable when browser storage is unavailable.
+    }
+  };
+
+  const handleTaskCompleted = (completedTask) => {
+    recordTaskCompletion();
+    if (completedTask) {
+      gamification.awardTaskXP(completedTask);
     }
   };
 
@@ -1586,6 +1596,11 @@ ${stuck
 
           <div className="h-4 w-[1px] bg-zinc-800" />
 
+          {/* XP & Level Widget */}
+          <XPWidget {...gamification} />
+
+          <div className="h-4 w-[1px] bg-zinc-800" />
+
           <span
             className={`inline-block text-xs font-mono-code transition-all duration-300 ${
               countAnim ? "scale-125 text-purple-400" : "text-zinc-400"
@@ -2093,7 +2108,7 @@ ${stuck
           <KanbanBoard
             onSelectTask={setSelectedTask}
             focusMode={focusMode}
-            onTaskCompleted={recordTaskCompletion}
+            onTaskCompleted={handleTaskCompleted}
           />
         </BoardZoomContext.Provider>
       </main>
@@ -2105,6 +2120,9 @@ ${stuck
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
           onSave={async (data) => {
+            if (data?.status === "done" && selectedTask?.status !== "done") {
+              handleTaskCompleted({ ...selectedTask, ...data });
+            }
             await updateTask(selectedTask._id, data);
             setSelectedTask(null);
           }}
