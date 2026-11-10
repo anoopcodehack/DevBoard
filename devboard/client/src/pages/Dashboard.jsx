@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import KanbanBoard from "../components/Board/KanbanBoard";
 import PomodoroTimer from "../components/Pomodoro/PomodoroTimer";
 import TaskModal from "../components/Task/TaskModal";
+import CommandPalette from "../components/common/CommandPalette";
 import Heatmap from "../components/Heatmap/Heatmap";
 import { useBoard } from "../context/BoardContext";
 import { useGithubStars } from "../hooks/useGithubStars";
@@ -437,6 +438,7 @@ const Dashboard = () => {
   const [focusMode, setFocusMode] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [isCreatingFirstTask, setIsCreatingFirstTask] = useState(false);
   const [showTop, setShowTop] = useState(false);
@@ -704,6 +706,17 @@ const Dashboard = () => {
         target.matches(
           "input, textarea, select, [contenteditable]:not([contenteditable='false']), [role='textbox'], button, a, [role='button']",
         );
+
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        !e.altKey &&
+        !e.shiftKey &&
+        e.key.toLowerCase() === "k"
+      ) {
+        e.preventDefault();
+        setShowPalette((v) => !v);
+        return;
+      }
 
       if (
         e.code === "Space" &&
@@ -1576,6 +1589,67 @@ ${stuck
     );
   }
 
+  const paletteActions = [
+    {
+      id: "new-task",
+      label: "Create new task",
+      hint: "N",
+      run: () => setIsCreatingFirstTask(true),
+    },
+    {
+      id: "search",
+      label: "Search tasks",
+      hint: "/",
+      run: () => document.getElementById("board-search-input")?.focus(),
+    },
+    {
+      id: "focus",
+      label: focusMode ? "Exit focus mode" : "Enter focus mode",
+      run: () => setFocusMode((v) => !v),
+    },
+    {
+      id: "burndown",
+      label: showBurndown ? "Hide burndown chart" : "Show burndown chart",
+      run: () => setShowBurndown((v) => !v),
+    },
+    {
+      id: "fullscreen",
+      label: isFullscreen ? "Exit fullscreen" : "Enter fullscreen",
+      run: handleFullscreen,
+    },
+    {
+      id: "import-csv",
+      label: "Import CSV",
+      run: () => csvInputRef.current?.click(),
+    },
+    { id: "export-csv", label: "Export CSV", run: handleExportCSV },
+    { id: "export-pdf", label: "Export PDF", run: handleExportPDF },
+    { id: "retro", label: "Copy sprint retro", run: generateRetro },
+    {
+      id: "clear-done",
+      label: "Archive completed tasks",
+      run: handleClearDone,
+    },
+    { id: "webhook", label: "Webhook settings", run: openWebhookSettings },
+    {
+      id: "shortcuts",
+      label: "Keyboard shortcuts",
+      hint: "?",
+      run: () => setShowHelp(true),
+    },
+    {
+      id: "auto-theme",
+      label: autoThemeEnabled ? "Turn off auto theme" : "Turn on auto theme",
+      run: handleToggleAutoTheme,
+    },
+    ...Object.keys(THEMES).map((name) => ({
+      id: `theme-${name}`,
+      label: `Theme: ${name}`,
+      run: () => handleSelectManualTheme(name),
+    })),
+    { id: "logout", label: "Sign out", run: handleLogout },
+  ];
+
   return (
     <div className="flex flex-col h-screen bg-[var(--bg)] text-zinc-100 font-sans overflow-hidden">
       {/* Top Navbar */}
@@ -2219,6 +2293,14 @@ ${stuck
         </div>
       )}
 
+      <CommandPalette
+        open={showPalette}
+        onClose={() => setShowPalette(false)}
+        actions={paletteActions}
+        tasks={tasks}
+        onSelectTask={handleSelectTask}
+      />
+
       {/* Keyboard Shortcuts Modal */}
       {showHelp && (
         <div
@@ -2243,6 +2325,12 @@ ${stuck
               </button>
             </div>
             <div className="p-5 flex flex-col gap-3 text-xs font-mono-code">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400">Command palette</span>
+                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">
+                  Ctrl K
+                </kbd>
+              </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Create new task</span>
                 <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">
