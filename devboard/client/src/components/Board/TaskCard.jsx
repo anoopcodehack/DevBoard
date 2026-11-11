@@ -8,6 +8,7 @@ import { getAvatarColor } from "../../utils/avatarColor";
 import { unzoomDragStyle, useBoardZoom } from "../../utils/boardZoom";
 import { timeAgo } from "../../utils/timeAgo";
 import { renderMentions } from "../../utils/mentions";
+import { isSessionUrl } from "../../utils/sessionUrl";
 import {
   CodeIcon,
   CopyIcon,
@@ -325,6 +326,20 @@ const TaskCard = ({
                   <span>#{task.githubIssueNumber}</span>
                 </a>
               )}
+
+              {/* Pair Programming Session */}
+              {task.pairProgramming?.enabled &&
+                isSessionUrl(task.pairProgramming.sessionUrl) && (
+                  <a
+                    href={task.pairProgramming.sessionUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-[10px] text-blue-400 hover:text-blue-300"
+                  >
+                    👥 Join session →
+                  </a>
+                )}
 
               {/* Pinned Indicator */}
               {pinned && (
