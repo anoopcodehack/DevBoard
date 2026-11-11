@@ -34,6 +34,7 @@ import {
 } from "../components/common/Icons";
 import { openVisit, touchVisit } from "../utils/lastVisit";
 import { timeAgo } from "../utils/timeAgo";
+import { topLanguage } from "../utils/topLanguage";
 import {
   BoardZoomContext,
   ZOOM_MAX,
@@ -278,6 +279,7 @@ const Dashboard = () => {
   };
 
   const debt = calculateDebtScore();
+  const topLang = useMemo(() => topLanguage(tasks), [tasks]);
 
   const [streak, setStreak] = useState(calculateStreak);
   const [showBurndown, setShowBurndown] = useState(false);
@@ -1617,6 +1619,14 @@ ${stuck
           {streak > 0 && (
             <span className="text-xs font-mono-code text-orange-300">
               🔥 {streak} day streak
+            </span>
+          )}
+          {topLang && (
+            <span
+              title={`${topLang.count} of ${topLang.total} ${topLang.total === 1 ? "snippet is" : "snippets are"} ${topLang.language}`}
+              className="text-xs font-mono-code text-zinc-400 hidden 2xl:inline"
+            >
+              💻 mostly {topLang.language}
             </span>
           )}
 
