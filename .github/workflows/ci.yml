@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# A newer push to the same branch makes the older run irrelevant, so cancel it
+# instead of paying for two builds of the same code.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  client:
+    name: Client build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: devboard/client
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: devboard/client/package-lock.json
+
+      - name: Install client dependencies
+        run: npm ci
+
+      - name: Build client
+        run: npm run build
+
+  server:
+    name: Server dependencies and syntax
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: devboard/server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: devboard/server/package-lock.json
+
+      - name: Install server dependencies
+        run: npm ci
+
+      # There is no server test suite yet. Parsing every module still catches
+      # the kind of breakage that only shows up at require time — a stray
+      # bracket, a bad import path — without needing a database.
+      - name: Check server syntax
+        run: |
+          find . -path ./node_modules -prune -o -name '*.js' -print0 \
+            | xargs -0 -n1 node --check
