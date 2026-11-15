@@ -7,6 +7,7 @@ import PomodoroTimer from "../components/Pomodoro/PomodoroTimer";
 import TaskModal from "../components/Task/TaskModal";
 import CommandPalette from "../components/common/CommandPalette";
 import Heatmap from "../components/Heatmap/Heatmap";
+import TagCloud from "../components/TagCloud/TagCloud";
 import {useBoard} from "../context/BoardContext";
 import { useGithubStars } from "../hooks/useGithubStars";
 import useXP from "../hooks/useXP";
@@ -2042,6 +2043,11 @@ ${stuck
       {/* Heatmap Section */}
       <div className="no-print">
         <Heatmap />
+      </div>
+
+      {/* Most used tags */}
+      <div className="no-print">
+        <TagCloud />
       </div>
 
       {/* Pomodoro Timer Bar */}
