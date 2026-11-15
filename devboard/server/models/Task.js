@@ -39,6 +39,25 @@ const taskSchema = new mongoose.Schema(
         assignedAt: { type: Date, default: Date.now },
       },
     ],
+    pairProgramming: {
+      enabled: { type: Boolean, default: false },
+      partner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+      },
+      // Rendered as a link on the card, so only http(s) gets in: a
+      // "javascript:" URL would run on click.
+      sessionUrl: {
+        type: String,
+        default: "",
+        trim: true,
+        validate: {
+          validator: (value) => !value || /^https?:\/\//i.test(value),
+          message: "Session URL must start with http:// or https://",
+        },
+      },
+    },
     // Earlier titles, oldest first; the current one stays in `title`
     titleHistory: [
       {
