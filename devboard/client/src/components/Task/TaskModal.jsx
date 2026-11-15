@@ -66,6 +66,17 @@ const DESCRIPTION_MAX_LENGTH = 500;
 const DESCRIPTION_WARN_AT = Math.round(DESCRIPTION_MAX_LENGTH * 0.8);
 const DESCRIPTION_ALERT_AT = Math.round(DESCRIPTION_MAX_LENGTH * 0.92);
 const COPY_SUFFIX = " (copy)";
+const GIST_TOKEN_KEY = "gh_gist_token";
+const GIST_EXTENSIONS = {
+  javascript: "js",
+  typescript: "ts",
+  python: "py",
+  bash: "sh",
+  sql: "sql",
+  json: "json",
+  css: "css",
+  html: "html",
+};
 const PRIORITY_BY_SHORTCUT = {
   "1": "high",
   "2": "medium",
@@ -294,6 +305,76 @@ const TaskModal = ({
   const [aiError, setAiError] = useState("");
   const [duplicating, setDuplicating] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [gistToken, setGistToken] = useState(() => {
+    try {
+      return sessionStorage.getItem(GIST_TOKEN_KEY) || "";
+    } catch {
+      return "";
+    }
+  });
+  const [gistTokenFor, setGistTokenFor] = useState(null);
+  const [gistLoading, setGistLoading] = useState(null);
+  const [gistLinks, setGistLinks] = useState({});
+
+  const handlePublishGist = async (snippet, index) => {
+    const token = gistToken.trim();
+    if (!token) {
+      setGistTokenFor(index);
+      return;
+    }
+
+    try {
+      sessionStorage.setItem(GIST_TOKEN_KEY, token);
+    } catch {
+      toast.error("Could not store the GitHub token for this browser tab");
+      return;
+    }
+
+    const extension =
+      GIST_EXTENSIONS[String(snippet.language || "").toLowerCase()] || "txt";
+    setGistLoading(index);
+    try {
+      const response = await fetch("https://api.github.com/gists", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+          "Content-Type": "application/json",
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+        body: JSON.stringify({
+          description: `DevBoard snippet: ${task?.title || form.title}`,
+          public: false,
+          files: { [`snippet.${extension}`]: { content: snippet.code } },
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          sessionStorage.removeItem(GIST_TOKEN_KEY);
+          setGistToken("");
+          setGistTokenFor(index);
+        }
+        throw new Error(result.message || "GitHub could not create the gist");
+      }
+      setGistLinks((previous) => ({ ...previous, [index]: result.html_url }));
+      setGistTokenFor(null);
+      toast.success("Secret GitHub Gist created");
+    } catch (error) {
+      toast.error(error.message || "Could not publish the GitHub Gist");
+    } finally {
+      setGistLoading(null);
+    }
+  };
+
+  const handleCopyGistLink = async (url) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Gist link copied to clipboard");
+    } catch {
+      toast.error("Could not copy the Gist link");
+    }
+  };
 
   const handleClose = useCallback(() => {
     if (isDirty) {
@@ -1040,6 +1121,78 @@ ${task.snippets
               >
                 ✕ Remove
               </button>
+            </div>
+          ))}
+
+          {task?.snippets?.map((snippet, index) => (
+            <div
+              key={`gist-${index}`}
+              className="-mt-2 mb-2 px-3 flex flex-wrap items-center justify-end gap-3"
+            >
+              <span className="mr-auto text-[10px] text-[var(--text-muted)]">
+                {snippet.language} snippet
+              </span>
+              {gistLinks[index] ? (
+                <>
+                  <a
+                    href={gistLinks[index]}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="min-w-0 truncate text-xs text-emerald-400 hover:text-emerald-300"
+                  >
+                    {gistLinks[index]}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyGistLink(gistLinks[index])}
+                    className="text-xs text-emerald-400 hover:text-emerald-300"
+                  >
+                    Copy link
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handlePublishGist(snippet, index)}
+                  disabled={gistLoading === index}
+                  className="text-xs text-[var(--accent)] hover:opacity-80 disabled:opacity-50"
+                >
+                  {gistLoading === index
+                    ? "Publishing…"
+                    : "Publish as secret Gist"}
+                </button>
+              )}
+              {gistTokenFor === index && !gistLinks[index] && (
+                <div className="basis-full rounded border border-[var(--border-primary)] p-3 space-y-2">
+                  <label className="block text-[11px] text-[var(--text-secondary)]">
+                    GitHub personal access token with the <code>gist</code> scope
+                    <input
+                      type="password"
+                      autoComplete="off"
+                      value={gistToken}
+                      onChange={(event) => setGistToken(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") handlePublishGist(snippet, index);
+                      }}
+                      placeholder="Paste your GitHub token"
+                      className="mt-1 w-full bg-[var(--bg-primary)] border border-[var(--border-primary)] rounded px-2.5 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+                    />
+                  </label>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[10px] text-[var(--text-muted)]">
+                      Token stays in this browser tab only; it is sent directly to GitHub.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handlePublishGist(snippet, index)}
+                      disabled={!gistToken.trim() || gistLoading === index}
+                      className="shrink-0 rounded bg-[var(--accent)] px-2.5 py-1.5 text-xs text-white disabled:opacity-50"
+                    >
+                      {gistLoading === index ? "Publishing…" : "Create secret Gist"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
 
