@@ -6,9 +6,9 @@ import KanbanBoard from "../components/Board/KanbanBoard";
 import PomodoroTimer from "../components/Pomodoro/PomodoroTimer";
 import TaskModal from "../components/Task/TaskModal";
 import Heatmap from "../components/Heatmap/Heatmap";
-import { useBoard } from "../context/BoardContext";
+import {useBoard} from "../context/BoardContext";
 import { useGithubStars } from "../hooks/useGithubStars";
-import { useXP } from "../hooks/useXP";
+import useXP from "../hooks/useXP";
 import { XPWidget } from "../components/common/XPWidget";
 import jsPDF from "jspdf";
 import {
@@ -55,10 +55,9 @@ const CSV_HEADERS = ["Title", "Status", "Priority", "Tags", "Created"];
 const calculateStreak = () => {
   try {
     const history = JSON.parse(
-      localStorage.getItem("completion_history") || "[]",
+      localStorage.getItem("completion_history") || "[]"
     );
     if (!Array.isArray(history)) return 0;
-
     const completedDays = new Set(
       history
         .map((completion) => {
@@ -67,7 +66,7 @@ const calculateStreak = () => {
             ? null
             : date.toISOString().slice(0, 10);
         })
-        .filter(Boolean),
+        .filter(Boolean)
     );
     const today = new Date();
     const todayKey = today.toISOString().slice(0, 10);
@@ -75,7 +74,6 @@ const calculateStreak = () => {
     yesterday.setUTCDate(yesterday.getUTCDate() - 1);
     let date = completedDays.has(todayKey) ? today : yesterday;
     let streak = 0;
-
     while (completedDays.has(date.toISOString().slice(0, 10))) {
       streak += 1;
       date.setUTCDate(date.getUTCDate() - 1);
@@ -101,10 +99,8 @@ const parseCsvRows = (text) => {
   let field = "";
   let inQuotes = false;
   let afterQuote = false;
-
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i];
-
     if (inQuotes) {
       if (char === '"') {
         if (text[i + 1] === '"') {
@@ -119,7 +115,6 @@ const parseCsvRows = (text) => {
       }
       continue;
     }
-
     if (afterQuote) {
       if (char === ",") {
         row.push(field);
@@ -137,7 +132,6 @@ const parseCsvRows = (text) => {
       }
       continue;
     }
-
     if (char === '"') {
       if (field.length > 0) throw new Error("Unexpected quote in a CSV value.");
       inQuotes = true;
@@ -154,13 +148,11 @@ const parseCsvRows = (text) => {
       field += char;
     }
   }
-
   if (inQuotes) throw new Error("The CSV has an unclosed quoted value.");
   if (field.length > 0 || row.length > 0 || afterQuote) {
     row.push(field);
     rows.push(row);
   }
-
   return rows;
 };
 
@@ -203,7 +195,7 @@ const getWeatherMood = (code) => {
   if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code))
     return "rain";
   if ([71, 73, 75, 77, 85, 86].includes(code)) return "snow";
-  if ([95, 96, 97, 99].includes(code)) return "storm";
+  if ([95, 96, 99].includes(code)) return "storm";
   return null;
 };
 
@@ -217,7 +209,7 @@ const WEATHER_ACCENTS = {
 
 const parseVoiceTask = (transcript) => {
   const priorityMatch = transcript.match(
-    /(?:\b(?:with|as)\s+)?\b(high|medium|low)\s+priority\b|\bpriority\s+(high|medium|low)\b/i,
+    /(?:\b(?:with|as)\s+)?\b(high|medium|low)\s+priority\b|\bpriority\s+(high|medium|low)\b/i
   );
   const priority = (
     priorityMatch?.[1] ||
@@ -227,12 +219,11 @@ const parseVoiceTask = (transcript) => {
   const title = transcript
     .replace(
       /(?:\b(?:with|as)\s+)?\b(?:high|medium|low)\s+priority\b|\bpriority\s+(?:high|medium|low)\b/gi,
-      " ",
+      ""
     )
     .replace(/\s+/g, " ")
-    .replace(/[,\s;:.!?]+$/, "")
+    .replace(/[\s;:.!?]+$/, "")
     .trim();
-
   return { title, priority };
 };
 
@@ -258,29 +249,55 @@ const Dashboard = () => {
   const gamification = useXP();
 
   const calculateDebtScore = () => {
-    const debtTasks = tasks.filter(t => 
-      t.tags?.some(tag => 
-        ['tech-debt', 'refactor', 'hack', 'fixme', 'legacy'].includes(tag.toLowerCase())
-      ) && t.status !== 'done'
+    const debtTasks = tasks.filter(
+      (t) =>
+        t.tags?.some((tag) =>
+          ["tech-debt", "refactor", "hack", "fixme", "legacy"].includes(
+            tag.toLowerCase()
+          )
+        ) && t.status !== "done"
     );
-
     const score = debtTasks.reduce((acc, t) => {
-      const weight = t.priority === 'high' ? 3 : t.priority === 'medium' ? 2 : 1;
+      const weight = t.priority === "high" ? 3 : t.priority === "medium" ? 2 : 1;
       return acc + weight;
     }, 0);
-
-    const level = score === 0 ? 'clean' 
-                : score < 5 ? 'manageable' 
-                : score < 10 ? 'concerning' 
-                : 'critical';
-
+    const level =
+      score === 0
+        ? "clean"
+        : score < 5
+        ? "manageable"
+        : score < 10
+        ? "concerning"
+        : "critical";
     return { score, level, count: debtTasks.length };
   };
 
   const debt = calculateDebtScore();
-
   const [streak, setStreak] = useState(calculateStreak);
   const [showBurndown, setShowBurndown] = useState(false);
+  const [standupCopied, setStandupCopied] = useState(false);
+
+  const generateStandup = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    const done = tasks.filter(
+      (t) => t.status === "done" && new Date(t.updatedAt) >= yesterday
+    );
+    const inProgress = tasks.filter((t) => t.status === "inprogress");
+    const blocked = tasks.filter((t) => t.blockedBy?.length > 0);
+
+    const standup = [
+      `✅ Yesterday:\n${done.map((t) => `- Completed: ${t.title}`).join("\n") || "- No tasks completed"}`,
+      `🔄 Today:\n${inProgress.map((t) => `- Working on: ${t.title}`).join("\n") || "- No tasks in progress"}`,
+      `🚫 Blockers:\n${blocked.map((t) => `- Blocked: ${t.title}`).join("\n") || "- No blockers"}`,
+    ].join("\n\n");
+
+    navigator.clipboard.writeText(standup);
+    setStandupCopied(true);
+    setTimeout(() => setStandupCopied(false), 2000);
+  };
 
   const burndownData = useMemo(() => {
     const sprintStart = activeSprint?.startDate
@@ -294,39 +311,41 @@ const Dashboard = () => {
     const pad = 10;
     const innerW = W - pad * 2;
     const innerH = H - pad * 2;
-
     const idealLine = Array.from({ length: days }, (_, i) => ({
       day: i + 1,
       ideal: Math.round(totalTasks - (totalTasks / days) * i),
     }));
-
-    const actualLine = idealLine.map(({ day }) => {
+    const actualLine = idealLine.map((dayObj) => {
       const date = new Date(sprintStart);
-      date.setDate(date.getDate() + day);
+      date.setDate(date.getDate() + dayObj.day);
       const remaining = tasks.filter((t) => {
         if (t.status !== "done") return true;
-        const doneDate = new Date(t.updatedAt || t.createdAt || Date.now());
+        const doneDate = new Date(
+          t.updatedAt || t.createdAt || Date.now()
+        );
         return doneDate > date;
       }).length;
-      return { day, actual: remaining };
+      return { day: dayObj.day, actual: remaining };
     });
-
     const idealPoints = idealLine
       .map(
         (d, i) =>
-          `${pad + (i / (days - 1)) * innerW},${pad + ((maxY - d.ideal) / maxY) * innerH}`,
+          `${pad + (i / (days - 1)) * innerW},${
+            pad + ((maxY - d.ideal) / maxY) * innerH
+          }`
       )
       .join(" ");
-
     const actualPoints = actualLine
       .map(
         (d, i) =>
-          `${pad + (i / (days - 1)) * innerW},${pad + ((maxY - d.actual) / maxY) * innerH}`,
+          `${pad + (i / (days - 1)) * innerW},${
+            pad + ((maxY - d.actual) / maxY) * innerH
+          }`
       )
       .join(" ");
-
     return { idealPoints, actualPoints };
   }, [tasks, activeSprint]);
+
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef(null);
   const listeningRef = useRef(false);
@@ -336,14 +355,14 @@ const Dashboard = () => {
   const recordTaskCompletion = () => {
     try {
       const history = JSON.parse(
-        localStorage.getItem("completion_history") || "[]",
+        localStorage.getItem("completion_history") || "[]"
       );
       const completions = Array.isArray(history) ? history : [];
       completions.push(new Date().toISOString());
       localStorage.setItem("completion_history", JSON.stringify(completions));
       setStreak(calculateStreak());
     } catch {
-      // Keep the dashboard usable when browser storage is unavailable.
+      // Keep dashboard usable if storage fails
     }
   };
 
@@ -370,7 +389,7 @@ const Dashboard = () => {
         const { data } = await axios.get("/api/v1/auth/me", webhookHeaders);
         setWebhookUrl(data?.webhookUrl || "");
       } catch {
-        // older server without GET /me: start with an empty input
+        // older server without GET
       }
       setWebhookLoaded(true);
     }
@@ -382,7 +401,7 @@ const Dashboard = () => {
       await axios.put(
         "/api/v1/auth/profile",
         { webhookUrl: webhookUrl.trim() },
-        webhookHeaders,
+        webhookHeaders
       );
       toast.success("Webhook URL saved");
     } catch {
@@ -394,17 +413,13 @@ const Dashboard = () => {
 
   const [countAnim, setCountAnim] = useState(false);
   const prevCount = useRef(tasks.length);
-
   useEffect(() => {
     if (prevCount.current !== tasks.length) {
       setCountAnim(true);
-
       const timer = setTimeout(() => {
         setCountAnim(false);
       }, 400);
-
       prevCount.current = tasks.length;
-
       return () => clearTimeout(timer);
     }
   }, [tasks.length]);
@@ -420,15 +435,10 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    document.title = "DevBoard — Developer Kanban";
+    document.title = "DevBoard Developer Kanban";
   }, []);
 
-  // Read once, before anything moves the stamps, so this holds the session
-  // before this one rather than the one that just started.
   const [lastVisit] = useState(() => openVisit());
-
-  // Keep the board marked as seen while it is open, otherwise a long session
-  // would count as a gap the moment you reload at the end of it.
   useEffect(() => {
     const id = setInterval(touchVisit, 60 * 1000);
     return () => clearInterval(id);
@@ -444,8 +454,9 @@ const Dashboard = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [retroCopied, setRetroCopied] = useState(false);
   const csvInputRef = useRef(null);
+
   const [autoThemeEnabled, setAutoThemeEnabled] = useState(
-    () => localStorage.getItem("board_auto_theme") === "true",
+    () => localStorage.getItem("board_auto_theme") === "true"
   );
   const [timeMood, setTimeMood] = useState(() => getTimeMood());
   const [weatherCoordinates, setWeatherCoordinates] = useState(null);
@@ -454,7 +465,7 @@ const Dashboard = () => {
   const weatherRequestId = useRef(0);
 
   const [theme, setTheme] = useState(
-    () => JSON.parse(localStorage.getItem("board_theme")) || "blue",
+    () => JSON.parse(localStorage.getItem("board_theme")) || "blue"
   );
 
   const moodTheme = MOOD_THEMES[timeMood] || MOOD_THEMES.night;
@@ -470,11 +481,11 @@ const Dashboard = () => {
     document.documentElement.style.setProperty("--accent", activeTheme.accent);
     document.documentElement.style.setProperty(
       "--accent-10",
-      `${activeTheme.accent}1A`,
+      `${activeTheme.accent}1A`
     );
     document.documentElement.style.setProperty(
       "--accent-20",
-      `${activeTheme.accent}33`,
+      `${activeTheme.accent}33`
     );
     document.documentElement.style.setProperty("--bg", activeTheme.bg);
   }, [activeTheme.accent, activeTheme.bg]);
@@ -485,17 +496,18 @@ const Dashboard = () => {
     setZoom(value);
     storeZoom(value);
   };
-  // The zoom control only shows from md up, where columns sit side by side.
-  // Below that the board stacks full-width columns, so it stays at 100%.
+
   const [wideScreen, setWideScreen] = useState(
-    () => window.matchMedia("(min-width: 768px)").matches,
+    () => window.matchMedia("(min-width: 768px)").matches
   );
+
   useEffect(() => {
     const query = window.matchMedia("(min-width: 768px)");
     const onChange = (e) => setWideScreen(e.matches);
     query.addEventListener("change", onChange);
     return () => query.removeEventListener("change", onChange);
   }, []);
+
   const boardZoom = wideScreen ? zoom : 1;
 
   useEffect(() => {
@@ -508,7 +520,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!autoThemeEnabled) return undefined;
-
     const updateTimeMood = () => setTimeMood(getTimeMood());
     updateTimeMood();
     const interval = setInterval(updateTimeMood, 60 * 1000);
@@ -517,7 +528,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!autoThemeEnabled || !weatherCoordinates) return undefined;
-
     let cancelled = false;
     const controller = new AbortController();
     const loadWeather = async () => {
@@ -531,12 +541,9 @@ const Dashboard = () => {
         });
         const response = await fetch(
           `https://api.open-meteo.com/v1/forecast?${params}`,
-          {
-            signal: controller.signal,
-          },
+          { signal: controller.signal }
         );
         if (!response.ok) throw new Error("Weather request failed");
-
         const data = await response.json();
         if (!cancelled && Number.isFinite(data.current?.weather_code)) {
           setWeatherCode(data.current.weather_code);
@@ -551,7 +558,6 @@ const Dashboard = () => {
         }
       }
     };
-
     loadWeather();
     const interval = setInterval(loadWeather, 30 * 60 * 1000);
     return () => {
@@ -560,6 +566,72 @@ const Dashboard = () => {
       clearInterval(interval);
     };
   }, [autoThemeEnabled, weatherCoordinates]);
+
+  const handleVoice = () => {
+    if (listeningRef.current) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Voice task creation is not supported by this browser.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    listeningRef.current = true;
+    voiceResultHandledRef.current = false;
+
+    recognition.onstart = () => setListening(true);
+    recognition.onresult = async (event) => {
+      if (voiceResultHandledRef.current) return;
+      voiceResultHandledRef.current = true;
+      const transcript = Array.from(event.results)
+        .filter((result) => result.isFinal)
+        .map((result) => result[0]?.transcript || "")
+        .join(" ")
+        .trim();
+      if (!transcript) {
+        toast.warn("I couldn't hear a task. Try speaking again.");
+        return;
+      }
+      const task = parseVoiceTask(transcript);
+      if (!task.title) {
+        toast.warn("Please say a task title along with its priority.");
+        return;
+      }
+      try {
+        await addTask({ ...task, status: "backlog" });
+        toast.success(`Created task: ${task.title}`);
+      } catch (error) {
+        console.error("Voice task creation failed:", error);
+        toast.error("Could not create the voice task.");
+      }
+    };
+    recognition.onerror = () => {
+      listeningRef.current = false;
+      setListening(false);
+      recognitionRef.current = null;
+    };
+    recognition.onend = () => {
+      listeningRef.current = false;
+      setListening(false);
+      recognitionRef.current = null;
+    };
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+    } catch (error) {
+      listeningRef.current = false;
+      setListening(false);
+      recognitionRef.current = null;
+    }
+  };
+  voiceHandlerRef.current = handleVoice;
 
   const handleToggleAutoTheme = () => {
     const nextEnabled = !autoThemeEnabled;
@@ -577,11 +649,10 @@ const Dashboard = () => {
       setWeatherStatus("unavailable");
       return;
     }
-
     setWeatherStatus("requesting");
     const requestId = ++weatherRequestId.current;
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
+      (coords) => {
         if (requestId !== weatherRequestId.current) return;
         setWeatherCoordinates({
           latitude: coords.latitude,
@@ -593,7 +664,7 @@ const Dashboard = () => {
         setWeatherCode(null);
         setWeatherStatus("unavailable");
       },
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 30 * 60 * 1000 },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 30 * 60 * 1000 }
     );
   };
 
@@ -605,87 +676,6 @@ const Dashboard = () => {
     setWeatherCode(null);
     setWeatherStatus("off");
   };
-
-  const handleVoice = () => {
-    if (listeningRef.current) {
-      recognitionRef.current?.stop();
-      return;
-    }
-
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast.error("Voice task creation is not supported by this browser.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
-    recognition.lang = "en-US";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    listeningRef.current = true;
-    voiceResultHandledRef.current = false;
-
-    recognition.onstart = () => setListening(true);
-    recognition.onresult = async (event) => {
-      if (voiceResultHandledRef.current) return;
-      voiceResultHandledRef.current = true;
-
-      const transcript = Array.from(event.results)
-        .filter((result) => result.isFinal)
-        .map((result) => result[0]?.transcript || "")
-        .join(" ")
-        .trim();
-
-      if (!transcript) {
-        toast.warn("I couldn't hear a task. Try speaking again.");
-        return;
-      }
-
-      const task = parseVoiceTask(transcript);
-      if (!task.title) {
-        toast.warn("Please say a task title along with its priority.");
-        return;
-      }
-
-      try {
-        await addTask({ ...task, status: "backlog" });
-        toast.success(`Created task: ${task.title}`);
-      } catch (error) {
-        console.error("Voice task creation failed:", error);
-        toast.error("Could not create the voice task.");
-      }
-    };
-    recognition.onerror = (event) => {
-      if (event.error !== "aborted") {
-        toast.error(
-          event.error === "not-allowed" || event.error === "service-not-allowed"
-            ? "Allow microphone access to create tasks by voice."
-            : "Voice recognition failed. Please try again.",
-        );
-      }
-      listeningRef.current = false;
-      setListening(false);
-      recognitionRef.current = null;
-    };
-    recognition.onend = () => {
-      listeningRef.current = false;
-      setListening(false);
-      recognitionRef.current = null;
-    };
-
-    try {
-      recognition.start();
-    } catch (error) {
-      listeningRef.current = false;
-      setListening(false);
-      recognitionRef.current = null;
-      console.error("Could not start voice recognition:", error);
-      toast.error("Could not start voice recognition. Please try again.");
-    }
-  };
-  voiceHandlerRef.current = handleVoice;
 
   const [searchHistory, setSearchHistory] = useState(() => {
     try {
@@ -702,9 +692,8 @@ const Dashboard = () => {
       const isTypingTarget =
         target instanceof HTMLElement &&
         target.matches(
-          "input, textarea, select, [contenteditable]:not([contenteditable='false']), [role='textbox'], button, a, [role='button']",
+          "input, textarea, select, [contenteditable]:not([contenteditable='false']), [role='textbox'], button, a, [role='button']"
         );
-
       if (
         e.code === "Space" &&
         !e.repeat &&
@@ -718,12 +707,13 @@ const Dashboard = () => {
         voiceHandlerRef.current?.();
         return;
       }
-
       if (isTypingTarget) return;
       if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
         setIsCreatingFirstTask(true);
       }
       if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+        e.preventDefault();
         setShowHelp((v) => !v);
       }
       if (e.key === "/" && !e.ctrlKey && !e.metaKey) {
@@ -739,7 +729,7 @@ const Dashboard = () => {
     () => () => {
       recognitionRef.current?.abort();
     },
-    [],
+    []
   );
 
   useEffect(() => {
@@ -751,7 +741,7 @@ const Dashboard = () => {
     return () =>
       window.removeEventListener(
         "beforeinstallprompt",
-        handleBeforeInstallPrompt,
+        handleBeforeInstallPrompt
       );
   }, []);
 
@@ -810,7 +800,9 @@ const Dashboard = () => {
     if (!trimmed) return;
     const updated = [
       trimmed,
-      ...searchHistory.filter((h) => h.toLowerCase() !== trimmed.toLowerCase()),
+      ...searchHistory.filter(
+        (h) => h.toLowerCase() !== trimmed.toLowerCase()
+      ),
     ].slice(0, 5);
     setSearchHistory(updated);
     localStorage.setItem("search_history", JSON.stringify(updated));
@@ -835,48 +827,42 @@ const Dashboard = () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
-  // Builds a sprint retrospective from the last 14 days of board data and
-  // copies it to the clipboard as markdown.
+
   const generateRetro = async () => {
     const twoWeeksAgo = new Date();
     twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-
     const completed = tasks.filter(
-      (t) => t.status === "done" && new Date(t.updatedAt) > twoWeeksAgo,
+      (t) => t.status === "done" && new Date(t.updatedAt) > twoWeeksAgo
     );
     const stuck = tasks.filter(
       (t) =>
         t.status === "inprogress" &&
-        Math.floor((Date.now() - new Date(t.updatedAt)) / 86400000) > 5,
+        Math.floor((Date.now() - new Date(t.updatedAt)) / 86400000) > 5
     );
     const highDone = completed.filter((t) => t.priority === "high");
-
-    const retro = `# Sprint Retrospective 🔄
+    const retro = `# Sprint Retrospective
 Generated: ${new Date().toLocaleDateString()}
 
-## ✅ What went well
-
+## What went well
 - Completed ${completed.length} tasks this sprint
 - Closed ${highDone.length} high priority items
 ${completed
   .slice(0, 3)
-  .map((t) => `- ✓ ${t.title}`)
+  .map((t) => `- ${t.title}`)
   .join("\n")}
 
-## 🚧 What needs improvement
-
+## What needs improvement
 ${
   stuck.length > 0
     ? `- ${stuck.length} tasks stuck in progress >5 days`
-    : "- No stuck tasks this sprint! 🎉"
+    : "- No stuck tasks this sprint!"
 }
 ${stuck
   .slice(0, 3)
-  .map((t) => `- ⚠️ ${t.title}`)
+  .map((t) => `- ${t.title}`)
   .join("\n")}
 
-## 🎯 Action items for next sprint
-
+## Action items for next sprint
 - Review ${tasks.filter((t) => t.status === "backlog").length} backlog items
 - Prioritize blocked tasks first`;
 
@@ -886,7 +872,8 @@ ${stuck
       setTimeout(() => setRetroCopied(false), 2000);
     } catch {
       toast.error("Could not copy the retro to the clipboard");
-    }};
+    }
+  };
 
   const handleExportPDF = () => {
     const doc = new jsPDF({
@@ -894,15 +881,12 @@ ${stuck
       unit: "mm",
       format: "a4",
     });
-
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-
     const margin = 12;
     const contentWidth = pageWidth - margin * 2;
     const columnGap = 5;
     const columnWidth = (contentWidth - columnGap * 3) / 4;
-
     const boardTop = 65;
     const bottomLimit = pageHeight - 18;
     const columnHeight = bottomLimit - boardTop;
@@ -942,8 +926,8 @@ ${stuck
     const groupedTasks = columns.map((column) =>
       tasks.filter(
         (task) =>
-          normalizeStatus(task.status) === normalizeStatus(column.status),
-      ),
+          normalizeStatus(task.status) === normalizeStatus(column.status)
+      )
     );
 
     const totalTasks = tasks.length;
@@ -954,18 +938,9 @@ ${stuck
       : 0;
 
     const priorityStyles = {
-      high: {
-        bg: [252, 226, 226],
-        text: [185, 55, 55],
-      },
-      medium: {
-        bg: [254, 249, 195],
-        text: [146, 105, 25],
-      },
-      low: {
-        bg: [219, 234, 254],
-        text: [45, 90, 190],
-      },
+      high: { bg: [252, 226, 226], text: [185, 55, 55] },
+      medium: { bg: [254, 249, 195], text: [146, 105, 25] },
+      low: { bg: [219, 234, 254], text: [45, 90, 190] },
     };
 
     const tagColors = [
@@ -974,54 +949,42 @@ ${stuck
       { bg: [230, 244, 238], text: [55, 125, 90] },
     ];
 
-    // Truncate text without cutting words unnecessarily.
     const getLimitedLines = (text, width, maxLines) => {
       const fullLines = doc.splitTextToSize(String(text || ""), width);
-
       if (fullLines.length <= maxLines) {
         return fullLines;
       }
-
       const result = fullLines.slice(0, maxLines);
-      let lastLine = result[maxLines - 1].trimEnd();
-
+      let lastLine = result[maxLines - 1];
       while (
         lastLine.length > 0 &&
         doc.getTextWidth(lastLine + "...") > width
       ) {
         lastLine = lastLine.slice(0, -1).trimEnd();
       }
-
       result[maxLines - 1] = lastLine + "...";
-
       return result;
     };
 
-    // Prepare tag badges and wrap them into rows.
     const prepareTags = (tags, maxWidth) => {
       const tagList = Array.isArray(tags)
         ? tags
         : typeof tags === "string"
-          ? tags
-              .split(",")
-              .map((tag) => tag.trim())
-              .filter(Boolean)
-          : [];
-
+        ? tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+        : [];
       doc.setFont("helvetica", "normal");
       doc.setFontSize(6.5);
-
       const rows = [[]];
       let currentWidth = 0;
-
       tagList.forEach((tag) => {
         const label =
           String(tag).length > 16
             ? String(tag).slice(0, 15) + "..."
             : String(tag);
-
-        const badgeWidth = Math.min(doc.getTextWidth(label) + 5, 28);
-
+        const badgeWidth = Math.min(doc.getTextWidth(label) + 5, maxWidth);
         if (
           currentWidth + badgeWidth > maxWidth &&
           rows[rows.length - 1].length > 0
@@ -1029,56 +992,39 @@ ${stuck
           rows.push([]);
           currentWidth = 0;
         }
-
         rows[rows.length - 1].push({
           label,
           width: badgeWidth,
         });
-
         currentWidth += badgeWidth + 1.5;
       });
-
       return rows.filter((row) => row.length > 0);
     };
 
-    // Draw the document header and summary.
     const drawHeader = () => {
       let y = 18;
-
       doc.setFont("helvetica", "bold");
       doc.setFontSize(21);
       doc.setTextColor(35, 40, 55);
       doc.text("DevBoard", margin, y);
-
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(110, 115, 130);
       doc.text("PROJECT BOARD REPORT", margin, y + 7);
-
       doc.setFontSize(8);
       doc.text(
         `Generated: ${new Date().toLocaleDateString()}`,
         pageWidth - margin,
         y + 2,
-        { align: "right" },
+        { align: "right" }
       );
 
-      // Summary panel.
       const summaryY = 30;
       const summaryHeight = 27;
       const metricWidth = contentWidth / 4;
-
       doc.setFillColor(247, 248, 251);
       doc.setDrawColor(235, 237, 242);
-      doc.roundedRect(
-        margin,
-        summaryY,
-        contentWidth,
-        summaryHeight,
-        2.5,
-        2.5,
-        "FD",
-      );
+      doc.roundedRect(margin, summaryY, contentWidth, summaryHeight, 2.5, 2.5, "FD");
 
       const metrics = [
         { value: totalTasks, label: "TOTAL TASKS" },
@@ -1086,20 +1032,16 @@ ${stuck
         { value: `${completionRate}%`, label: "COMPLETION" },
         { value: inProgressTasks, label: "IN PROGRESS" },
       ];
-
       metrics.forEach((metric, index) => {
         const x = margin + index * metricWidth;
-
         if (index > 0) {
           doc.setDrawColor(225, 228, 234);
           doc.line(x, summaryY + 5, x, summaryY + summaryHeight - 5);
         }
-
         doc.setFont("helvetica", "bold");
         doc.setFontSize(16);
         doc.setTextColor(40, 48, 65);
         doc.text(String(metric.value), x + 6, summaryY + 12);
-
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         doc.setTextColor(125, 130, 140);
@@ -1107,102 +1049,75 @@ ${stuck
       });
     };
 
-    // Draw the four column panels.
     const drawColumns = () => {
       columns.forEach((column, index) => {
         const x = margin + index * (columnWidth + columnGap);
-
         doc.setFillColor(248, 249, 251);
         doc.setDrawColor(233, 235, 240);
         doc.roundedRect(x, boardTop, columnWidth, columnHeight, 3, 3, "FD");
-
-        // Status indicator.
         doc.setFillColor(...column.color);
         doc.circle(x + 5, boardTop + 9, 1.5, "F");
-
-        // Column title.
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8.5);
         doc.setTextColor(45, 52, 65);
         doc.text(column.label, x + 9, boardTop + 10);
 
-        // Task count badge.
         const count = groupedTasks[index].length;
         const countText = String(count);
-
         doc.setFont("helvetica", "bold");
         doc.setFontSize(7);
-
         const badgeWidth = doc.getTextWidth(countText) + 6;
         const badgeX = x + columnWidth - badgeWidth - 3;
-
         doc.setFillColor(...column.light);
         doc.roundedRect(badgeX, boardTop + 4.5, badgeWidth, 7, 2, 2, "F");
-
         doc.setTextColor(...column.color);
         doc.text(countText, badgeX + badgeWidth / 2, boardTop + 9.3, {
           align: "center",
         });
-
-        // Header separator.
         doc.setDrawColor(230, 232, 237);
         doc.line(x + 3, boardTop + 15, x + columnWidth - 3, boardTop + 15);
       });
     };
 
-    // Prepare one task card.
     const prepareCard = (task, cardWidth) => {
       const padding = 3.5;
       const priority = String(task.priority || "normal").toLowerCase();
-
       const priorityStyle = priorityStyles[priority] || {
         bg: [235, 237, 241],
         text: [90, 95, 105],
       };
-
       const priorityLabel = priority.toUpperCase();
-
       doc.setFont("helvetica", "bold");
       doc.setFontSize(6);
-
-      const priorityWidth = Math.max(13, doc.getTextWidth(priorityLabel) + 5);
-
+      const priorityWidth = Math.max(
+        13,
+        doc.getTextWidth(priorityLabel) + 5
+      );
       const titleWidth = cardWidth - padding * 2 - priorityWidth - 3;
-
       doc.setFontSize(8.5);
-
       const titleLines = getLimitedLines(
         task.title || "Untitled task",
         titleWidth,
-        2,
+        2
       );
-
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
-
       const descriptionLines = task.description
         ? getLimitedLines(task.description, cardWidth - padding * 2, 3)
         : [];
-
       const tagRows = prepareTags(task.tags, cardWidth - padding * 2);
-
       const createdDate = task.createdAt ? formatCsvDate(task.createdAt) : "";
 
       const titleHeight = titleLines.length * 3.8;
       const descriptionHeight = descriptionLines.length * 3.2;
-
       const descriptionTagGap =
         descriptionLines.length > 0 && tagRows.length > 0 ? 3 : 0;
-
       const tagHeight = tagRows.length * 6;
-
       const separatorHeight =
         descriptionLines.length > 0 && (tagRows.length > 0 || createdDate)
           ? 3
           : 0;
-
       const dateHeight = createdDate ? 5 : 0;
-
       const cardHeight =
         7 +
         titleHeight +
@@ -1232,7 +1147,6 @@ ${stuck
       };
     };
 
-    // Draw one complete task card.
     const drawCard = (task, x, y, width, layout) => {
       const {
         padding,
@@ -1247,23 +1161,18 @@ ${stuck
         descriptionHeight,
         separatorHeight,
       } = layout;
-
       doc.setFillColor(255, 255, 255);
       doc.setDrawColor(225, 228, 234);
       doc.roundedRect(x, y, width, layout.cardHeight, 2, 2, "FD");
 
-      // Task title.
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8.5);
       doc.setTextColor(35, 40, 50);
       doc.text(titleLines, x + padding, y + 6.5);
 
-      // Priority badge.
       const badgeX = x + width - priorityWidth - padding;
-
       doc.setFillColor(...priorityStyle.bg);
       doc.roundedRect(badgeX, y + 2.5, priorityWidth, 5.5, 1.8, 1.8, "F");
-
       doc.setFont("helvetica", "bold");
       doc.setFontSize(6);
       doc.setTextColor(...priorityStyle.text);
@@ -1272,100 +1181,70 @@ ${stuck
       });
 
       let contentY = y + 6.5 + titleHeight;
-
-      // Description.
       if (descriptionLines.length > 0) {
         contentY += 1;
-
         doc.setFont("helvetica", "normal");
         doc.setFontSize(7);
         doc.setTextColor(100, 105, 115);
         doc.text(descriptionLines, x + padding, contentY);
-
         contentY += descriptionHeight + 2;
       }
 
-      // Individual tag badges.
       if (tagRows.length > 0) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(6.5);
-
         tagRows.forEach((row, rowIndex) => {
           let tagX = x + padding;
           const tagY = contentY + rowIndex * 6;
-
           row.forEach((tag, tagIndex) => {
             const color = tagColors[tagIndex % tagColors.length];
-
             doc.setFillColor(...color.bg);
-            console.log("Tag badge dimensions:", {
-              tagX,
-              tagY,
-              width: tag.width,
-              height: 4.5,
-            });
             doc.roundedRect(tagX, tagY - 3.2, tag.width, 4.5, 1.3, 1.3, "F");
-
             doc.setTextColor(...color.text);
-            doc.text(tag.label, tagX + tag.width / 2, tagY - 0.2, {
+            doc.text(tag.label, tagX + tag.width / 2, tagY, {
               align: "center",
             });
-
             tagX += tag.width + 1.5;
           });
         });
-
         contentY += layout.tagHeight;
       }
 
-      // Subtle separator.
       if (separatorHeight > 0) {
-        contentY -= 3;
-
+        contentY += 1.5;
         doc.setDrawColor(235, 237, 241);
         doc.line(x + padding, contentY, x + width - padding, contentY);
-
         contentY += 2;
       }
 
-      // Creation date.
       if (createdDate) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(6.5);
         doc.setTextColor(130, 135, 145);
-        doc.text(`Created: ${createdDate}`, x + padding, contentY + 1);
+        doc.text(`Created: ${createdDate}`, x + padding, contentY + 3);
       }
     };
 
-    // Track the next unprinted task in each column.
     const taskIndexes = columns.map(() => 0);
-
     let pageNumber = 0;
-
     while (
       taskIndexes.some(
-        (taskIndex, index) => taskIndex < groupedTasks[index].length,
+        (taskIndex, index) => taskIndex < groupedTasks[index].length
       ) ||
       pageNumber === 0
     ) {
       if (pageNumber > 0) {
         doc.addPage();
       }
-
       pageNumber += 1;
-
       drawHeader();
       drawColumns();
 
-      // Render tasks independently in each column.
       columns.forEach((column, index) => {
         const columnX = margin + index * (columnWidth + columnGap);
-
         const cardWidth = columnWidth - 6;
         const cardX = columnX + 3;
-
         let cardY = boardTop + 19;
-
         const columnTasks = groupedTasks[index];
         let taskIndex = taskIndexes[index];
 
@@ -1379,44 +1258,32 @@ ${stuck
 
         while (taskIndex < columnTasks.length) {
           const task = columnTasks[taskIndex];
-
           const layout = prepareCard(task, cardWidth);
-
-          // Move the entire card to the next page if necessary.
-          if (cardY + layout.cardHeight > bottomLimit - 3) {
+          if (cardY + layout.cardHeight > bottomLimit) {
             break;
           }
-
           drawCard(task, cardX, cardY, cardWidth, layout);
-
           cardY += layout.cardHeight + 3.5;
           taskIndex += 1;
         }
-
         taskIndexes[index] = taskIndex;
       });
     }
 
-    // Add consistent footers to every page.
     const totalPages = doc.internal.getNumberOfPages();
-
     for (let page = 1; page <= totalPages; page += 1) {
       doc.setPage(page);
-
       doc.setDrawColor(232, 234, 239);
       doc.line(margin, pageHeight - 14, pageWidth - margin, pageHeight - 14);
-
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
       doc.setTextColor(140, 145, 155);
-
       doc.text("DevBoard | Project Board Export", margin, pageHeight - 8);
-
       doc.text(
         `Page ${page} of ${totalPages}`,
         pageWidth - margin,
         pageHeight - 8,
-        { align: "right" },
+        { align: "right" }
       );
     }
 
@@ -1427,39 +1294,35 @@ ${stuck
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-
     if (!file.name.toLowerCase().endsWith(".csv")) {
-      toast.error("Choose a .csv file to import.");
+      toast.error("Choose a csv file to import.");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
       toast.error("CSV files must be smaller than 5 MB.");
       return;
     }
-
     setIsImporting(true);
     try {
       const text = (await file.text()).replace(/^\uFEFF/, "");
       const rows = parseCsvRows(text);
       const nonEmptyRows = rows.filter((cells) =>
-        cells.some((cell) => cell.trim()),
+        cells.some((cell) => cell.trim())
       );
       if (nonEmptyRows.length < 2) {
         throw new Error(
-          "The CSV must include a header row and at least one task.",
+          "The CSV must include a header row and at least one task."
         );
       }
-
       const headers = nonEmptyRows[0].map((header) =>
-        header.trim().toLowerCase(),
+        header.trim().toLowerCase()
       );
       const titleIndex = headers.indexOf("title");
       if (titleIndex === -1) {
         throw new Error(
-          'The CSV needs a "Title" column. Export a DevBoard CSV for the supported format.',
+          'The CSV needs a "Title" column. Export a DevBoard CSV for the supported format.'
         );
       }
-
       const statusIndex = headers.indexOf("status");
       const priorityIndex = headers.indexOf("priority");
       const tagsIndex = headers.indexOf("tags");
@@ -1507,7 +1370,7 @@ ${stuck
 
       if (!candidates.length) {
         throw new Error(
-          invalidRows[0] || "No valid tasks were found in this CSV.",
+          invalidRows[0] || "No valid tasks were found in this CSV."
         );
       }
 
@@ -1525,13 +1388,13 @@ ${stuck
       const skippedCount = invalidRows.length + failedRows.length;
       if (importedCount) {
         toast.success(
-          `Imported ${importedCount} task${importedCount === 1 ? "" : "s"}.`,
+          `Imported ${importedCount} task${importedCount === 1 ? "" : "s"}.`
         );
       }
       if (skippedCount) {
         const firstIssue = invalidRows[0] || failedRows[0];
         toast.warn(
-          `${skippedCount} row${skippedCount === 1 ? " was" : "s were"} skipped. ${firstIssue}`,
+          `${skippedCount} row${skippedCount === 1 ? " was" : "s were"} skipped. ${firstIssue}`
         );
       }
     } catch (error) {
@@ -1541,20 +1404,23 @@ ${stuck
     }
   };
 
-  const myTasks = tasks.filter((t) => t.assignee?._id === user?._id);
+  const myTasks = user?.id
+    ? tasks.filter((t) => t.assignee?.id === user.id)
+    : tasks;
   const completionRate =
     myTasks.length > 0
       ? Math.round(
-          (myTasks.filter((t) => t.status === "done").length / myTasks.length) *
-            100,
+          (myTasks.filter((t) => t.status === "done").length /
+            myTasks.length) *
+            100
         )
       : 0;
   const daysRemaining = activeSprint
     ? Math.max(
         0,
         Math.ceil(
-          (new Date(activeSprint.endDate).getTime() - Date.now()) / 86400000,
-        ),
+          (new Date(activeSprint.endDate).getTime() - Date.now()) / 86400000
+        )
       )
     : 0;
 
@@ -1593,12 +1459,9 @@ ${stuck
               v1.2
             </span>
           </div>
-
           <div className="h-4 w-[1px] bg-zinc-800" />
-
           {/* XP & Level Widget */}
           <XPWidget {...gamification} />
-
           <span
             className={`inline-block text-xs font-mono-code transition-all duration-300 ${
               countAnim ? "scale-125 text-purple-400" : "text-zinc-400"
@@ -1608,30 +1471,31 @@ ${stuck
           </span>
           {lastVisit && (
             <span
-              title={`You last opened this board on ${new Date(lastVisit).toLocaleString()}`}
+              title={`You last opened this board on ${new Date(
+                lastVisit
+              ).toLocaleString()}`}
               className="text-xs font-mono-code text-zinc-500 no-print hidden 2xl:inline"
             >
-              last visit {timeAgo(lastVisit)}
+              last visit ({timeAgo(lastVisit)})
             </span>
           )}
           {streak > 0 && (
             <span className="text-xs font-mono-code text-orange-300">
-              🔥 {streak} day streak
+              {streak} day streak
             </span>
           )}
-
           {debt.count > 0 && (
-            <span 
-              title={`Tech Debt Level: ${debt.level} (${debt.count} active tasks)`}
+            <span
+              title={`Tech Debt Level: ${debt.level} (${debt.count} active)`}
               className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono-code border ${
-                debt.level === 'critical' 
-                  ? 'bg-red-500/10 text-red-400 border-red-500/30' 
-                  : debt.level === 'concerning' 
-                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' 
-                  : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                debt.level === "critical"
+                  ? "bg-red-500/10 text-red-400 border-red-500/30"
+                  : debt.level === "concerning"
+                  ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                  : "bg-blue-500/10 text-blue-400 border-blue-500/30"
               }`}
             >
-              🏦 debt: {debt.score}
+              debt: {debt.score}
             </span>
           )}
           {activeTag && (
@@ -1661,7 +1525,7 @@ ${stuck
               }}
               onBlur={() => handleSearch(searchQuery)}
               placeholder="Search tasks, code, or tags..."
-              className="w-full bg-[#111218] border border-zinc-800/90 rounded-lg pl-9 pr-8 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition font-mono-code"
+              className="w-full bg-[#111218] border border-zinc-800/90 rounded-lg pl-9 pr-8 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-blue-500/20 focus:border-blue-500 focus:ring-1 transition font-mono-code"
             />
             {searchQuery && (
               <button
@@ -1670,7 +1534,7 @@ ${stuck
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-[#555] hover:text-[#aaa] transition text-xs"
                 aria-label="Clear search"
               >
-                ✕
+                <XIcon className="w-3.5 h-3.5" />
               </button>
             )}
             {!searchQuery && (
@@ -1685,26 +1549,28 @@ ${stuck
 
         {/* Live Team Activity Ticker */}
         <div
-          className="hidden xl:flex items-center gap-2 min-w-0 max-w-xs px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/50 no-print"
+          className="hidden xl:flex items-center gap-2 min-w-0 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/50 no-print"
           aria-live="polite"
           aria-label="Recent team activity"
         >
           <ActivityIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-
           <span className="text-[10px] uppercase tracking-wider text-emerald-400 shrink-0 font-mono-code">
             Live
           </span>
-
           <div className="min-w-0 overflow-hidden">
             {recentActivity && recentActivity.length > 0 ? (
               <p
                 key={recentActivity[0].id}
                 className="ticker-item text-xs text-zinc-300 truncate font-mono-code"
-                title={`${recentActivity[0].userName} ${recentActivity[0].action} "${recentActivity[0].taskTitle}"`}
+                title={`${recentActivity[0].userName} ${recentActivity[0].action} ${recentActivity[0].taskTitle}`}
               >
-                <span className="text-zinc-100">{recentActivity[0].userName}</span>{" "}
+                <span className="text-zinc-100">
+                  {recentActivity[0].userName}
+                </span>{" "}
                 {recentActivity[0].action}{" "}
-                <span className="text-blue-300">{recentActivity[0].taskTitle}</span>
+                <span className="text-blue-300">
+                  {recentActivity[0].taskTitle}
+                </span>
               </p>
             ) : (
               <p className="text-xs text-zinc-500 truncate font-mono-code">
@@ -1713,7 +1579,8 @@ ${stuck
             )}
           </div>
         </div>
-         {/* Right: Actions, GitHub, User Profile */}
+
+        {/* Right: Actions, GitHub, User Profile */}
         <div className="flex items-center gap-2 shrink-0 no-print">
           {/* GitHub Stars */}
           <a
@@ -1725,11 +1592,10 @@ ${stuck
           >
             <GithubIcon className="w-3.5 h-3.5 text-zinc-400" />
             <StarIcon className="w-3 h-3 text-amber-400" />
-            {!starsLoading && stars !== null ? (
+            {!starsLoading && stars !== null && (
               <span>{formatStars(stars)}</span>
-            ) : (
-              <span>Star</span>
             )}
+            <span>Star</span>
           </a>
 
           {/* Analytics */}
@@ -1744,13 +1610,14 @@ ${stuck
           <button
             type="button"
             onClick={() => setIsCreatingFirstTask(true)}
-            className="flex items-center gap-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 px-3 py-1.5 rounded-lg shadow-sm shadow-blue-500/20 transition font-mono-code"
             title="Create new task (N)"
+            className="flex items-center gap-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 px-3 py-1.5 rounded-lg shadow-sm shadow-blue-500/20 transition font-mono-code"
           >
             <PlusIcon className="w-3.5 h-3.5" />
             <span>New Task</span>
           </button>
 
+          {/* Voice Task Button */}
           <button
             type="button"
             onClick={handleVoice}
@@ -1758,23 +1625,23 @@ ${stuck
               listening ? "Stop voice task recording" : "Create task with voice"
             }
             aria-pressed={listening}
-            className={`text-lg transition ${listening ? "text-red-400 animate-pulse" : "text-[#555] hover:text-[#aaa]"}`}
+            className={`text-lg transition ${
+              listening ? "text-red-400 animate-pulse" : "text-[#555] hover:text-[#aaa]"
+            }`}
             title={
               listening
                 ? "Stop voice recording"
                 : "Create task with voice (Space)"
             }
           >
-            🎤
+            🎙️
           </button>
 
           {/* Focus Mode */}
           <button
             type="button"
             onClick={() => setFocusMode((v) => !v)}
-            title={
-              focusMode ? "Disable focus mode" : "Focus mode (hide completed)"
-            }
+            title={focusMode ? "Disable focus mode" : "Focus mode (hide completed)"}
             className={`p-1.5 rounded-lg border text-xs transition ${
               focusMode
                 ? "bg-blue-500/10 border-blue-500 text-blue-400"
@@ -1786,9 +1653,9 @@ ${stuck
 
           {/* Board zoom */}
           <div
-            className="hidden md:flex items-center rounded-lg border border-zinc-800 text-zinc-400 font-mono-code text-[10px]"
             role="group"
             aria-label="Board zoom"
+            className="hidden md:flex items-center rounded-lg border border-zinc-800 text-zinc-400 font-mono-code text-[10px]"
           >
             <button
               type="button"
@@ -1798,13 +1665,15 @@ ${stuck
               aria-label="Zoom out"
               className="px-2 py-1 hover:text-zinc-200 hover:bg-zinc-900 rounded-l-lg transition disabled:opacity-40"
             >
-              −
+              -
             </button>
             <button
               type="button"
               onClick={() => changeZoom(1)}
               title="Reset zoom"
-              aria-label={`Zoom ${Math.round(zoom * 100)}%, reset to 100%`}
+              aria-label={`Zoom ${Math.round(
+                zoom * 100
+              )}%, reset to 100%`}
               className="px-1.5 py-1 min-w-[3.25rem] hover:text-zinc-200 hover:bg-zinc-900 transition"
             >
               {Math.round(zoom * 100)}%
@@ -1840,7 +1709,6 @@ ${stuck
           >
             <UploadIcon className="w-3.5 h-3.5" />
           </button>
-
           <button
             type="button"
             onClick={handleExportCSV}
@@ -1850,7 +1718,7 @@ ${stuck
             <DownloadIcon className="w-3.5 h-3.5" />
           </button>
 
-                    {/* Sprint retrospective generator */}
+          {/* Sprint retrospective generator */}
           <button
             type="button"
             onClick={generateRetro}
@@ -1858,6 +1726,16 @@ ${stuck
             className="px-2.5 py-1.5 rounded-lg border border-zinc-800 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
           >
             {retroCopied ? "Copied!" : "Generate Retro"}
+          </button>
+
+          {/* Auto-generate Standup generator */}
+          <button
+            type="button"
+            onClick={generateStandup}
+            title="Copy daily standup report to the clipboard"
+            className="px-2.5 py-1.5 rounded-lg border border-zinc-800 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+          >
+            {standupCopied ? "✅ Copied!" : "🗣️ Generate Standup"}
           </button>
 
           {/* Export board as PDF */}
@@ -1870,6 +1748,7 @@ ${stuck
           >
             <PrinterIcon className="w-3.5 h-3.5" />
           </button>
+
           {/* Clear Done */}
           <button
             type="button"
@@ -1944,7 +1823,9 @@ ${stuck
             aria-pressed={autoThemeEnabled}
             title={
               autoThemeEnabled
-                ? `Auto theme: ${moodTheme.name}${weatherMood ? ` · ${weatherMood} weather` : " · time only"}`
+                ? `Auto theme: ${moodTheme.name}${
+                    weatherMood ? ` (${weatherMood} weather)` : " (time only)"
+                  }`
                 : "Automatically change the theme based on time of day"
             }
             className={`p-1.5 rounded-lg border transition ${
@@ -1969,10 +1850,10 @@ ${stuck
               !autoThemeEnabled
                 ? "Enable automatic theme first to use local weather"
                 : weatherStatus === "ready"
-                  ? "Refresh weather theme using your approximate location"
-                  : weatherStatus === "unavailable"
-                    ? "Weather unavailable. Click to retry, or keep using the time-based theme"
-                    : "Use current local weather (your approximate location is sent to Open-Meteo)"
+                ? "Refresh weather theme using your approximate location"
+                : weatherStatus === "unavailable"
+                ? "Weather unavailable. Click to retry, or keep using the time-based theme"
+                : "Use current local weather (your approximate location is sent to Open-Meteo)"
             }
             className={`p-1.5 rounded-lg border transition disabled:opacity-40 disabled:cursor-not-allowed ${
               weatherStatus === "ready"
@@ -2007,7 +1888,6 @@ ${stuck
             >
               {user?.name?.[0]?.toUpperCase() || "U"}
             </div>
-
             <button
               type="button"
               onClick={handleLogout}
@@ -2022,9 +1902,9 @@ ${stuck
 
       {activeSprint && (
         <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/5 border-b border-blue-500/15 text-xs font-mono-code">
-          <span aria-hidden="true">🏃</span>
+          <span aria-hidden="true">🎯</span>
           <span className="font-medium text-blue-300">{activeSprint.name}</span>
-          <span className="text-zinc-500">·</span>
+          <span className="text-zinc-500">•</span>
           <span className="text-zinc-400">
             {daysRemaining} {daysRemaining === 1 ? "day" : "days"} remaining
           </span>
@@ -2046,7 +1926,7 @@ ${stuck
                 Sprint Burndown
               </span>
               <span className="text-[11px] text-zinc-400">
-                ({tasks.filter((t) => t.status === "done").length}/
+                ({tasks.filter((t) => t.status === "done").length} /{" "}
                 {tasks.length} done)
               </span>
             </div>
@@ -2068,7 +1948,6 @@ ${stuck
             role="img"
             aria-label="Sprint burndown chart"
           >
-            {/* ideal line */}
             <polyline
               points={burndownData.idealPoints}
               fill="none"
@@ -2076,7 +1955,6 @@ ${stuck
               strokeWidth="1.5"
               strokeDasharray="4 4"
             />
-            {/* actual line */}
             <polyline
               points={burndownData.actualPoints}
               fill="none"
@@ -2104,6 +1982,7 @@ ${stuck
       <main className="flex-1 overflow-hidden relative">
         <BoardZoomContext.Provider value={boardZoom}>
           <KanbanBoard
+            tasks={tasks}
             onSelectTask={setSelectedTask}
             focusMode={focusMode}
             onTaskCompleted={handleTaskCompleted}
@@ -2147,7 +2026,7 @@ ${stuck
           onClick={() => {
             window.scrollTo({ top: 0, behavior: "smooth" });
             const scrollContainers = document.querySelectorAll(
-              ".overflow-y-auto, .overflow-y-scroll, .board",
+              ".overflow-y-auto, .overflow-y-scroll, board"
             );
             scrollContainers.forEach((container) => {
               container.scrollTo({ top: 0, behavior: "smooth" });
@@ -2199,12 +2078,12 @@ ${stuck
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-blue-600 font-mono-code"
               />
               <p className="text-[10px] text-zinc-500 leading-relaxed font-mono-code">
-                DevBoard POSTs{" "}
+                DevBoard POSTS{" "}
                 <span className="text-zinc-400">
                   {"{ event, task, timestamp }"}
                 </span>{" "}
-                to this URL when one of your tasks is updated. Use it with
-                Zapier, n8n or your own endpoint. Leave empty to turn it off.
+                to this URL when one of your tasks is updated. Use Zapier, n8n or
+                your own endpoint. Leave empty to turn it off.
               </p>
               <button
                 type="button"
@@ -2259,12 +2138,6 @@ ${stuck
                 <span className="text-zinc-400">Search tasks</span>
                 <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">
                   /
-                </kbd>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Move between tasks</span>
-                <kbd className="bg-zinc-900 border border-zinc-700 px-2 py-0.5 rounded text-zinc-200">
-                  ←↑↓→
                 </kbd>
               </div>
               <div className="flex items-center justify-between">
