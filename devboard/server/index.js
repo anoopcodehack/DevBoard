@@ -17,8 +17,8 @@ dotenv.config();
 const REQUIRED_ENV = ["MONGO_URI", "JWT_SECRET"];
 const missingEnv = REQUIRED_ENV.filter((key) => !process.env[key]);
 if (missingEnv.length > 0) {
-  console.error("❌ Missing required environment variables:", missingEnv.join(", "));
-  console.error("👉 Copy server/.env.example to server/.env and fill in the values");
+  console.error("[ERROR] Missing required environment variables:", missingEnv.join(", "));
+  console.error("[HINT] Copy server/.env.example to server/.env and fill in the values");
   process.exit(1);
 }
 
@@ -103,7 +103,7 @@ app.get(`${API_VERSION}/health`, (req, res) => {
   });
 });
 
-app.get("/", (req, res) => res.json({ message: "DevBoard API running 🚀" }));
+app.get("/", (req, res) => res.json({ message: "DevBoard API running" }));
 
 const onlineSockets = new Set();
 
@@ -121,28 +121,28 @@ io.on("connection", (socket) => {
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
-    console.log("✅ MongoDB connected");
+    console.log("[INFO] MongoDB connected");
     // change app.listen to server.listen
     server.listen(process.env.PORT || 5000, () =>
-      console.log(`🚀 Server running on port ${process.env.PORT || 5000}`),
+      console.log(`[INFO] Server running on port ${process.env.PORT || 5000}`),
     );
   })
-  .catch((err) => console.error("❌ MongoDB error:", err));
+  .catch((err) => console.error("[ERROR] MongoDB error:", err));
 
 mongoose.connection.on("disconnected", () => {
-  console.log("⚠️ MongoDB disconnected! Reconnecting...");
+  console.log("[WARN] MongoDB disconnected! Reconnecting...");
 
   setTimeout(() => {
     mongoose.connect(process.env.MONGO_URI).catch((err) => {
-      console.error("❌ MongoDB reconnection failed:", err);
+      console.error("[ERROR] MongoDB reconnection failed:", err);
     });
   }, 5000);
 });
 
 mongoose.connection.on("reconnected", () => {
-  console.log("✅ MongoDB reconnected!");
+  console.log("[INFO] MongoDB reconnected!");
 });
 
 mongoose.connection.on("error", (err) => {
-  console.error("❌ MongoDB error:", err);
+  console.error("[ERROR] MongoDB error:", err);
 });

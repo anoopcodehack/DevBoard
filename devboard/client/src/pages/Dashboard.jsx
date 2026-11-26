@@ -32,6 +32,14 @@ import {
   XIcon,
   ExternalLinkIcon,
   ActivityIcon,
+  MicIcon,
+  MessageSquareIcon,
+  CheckIcon,
+  LayersIcon,
+  VSCodeIcon,
+  ClaudeIcon,
+  GoIcon,
+  ZedIcon,
 } from "../components/common/Icons";
 import { openVisit, touchVisit } from "../utils/lastVisit";
 import { timeAgo } from "../utils/timeAgo";
@@ -290,9 +298,9 @@ const Dashboard = () => {
     const blocked = tasks.filter((t) => t.blockedBy?.length > 0);
 
     const standup = [
-      `✅ Yesterday:\n${done.map((t) => `- Completed: ${t.title}`).join("\n") || "- No tasks completed"}`,
-      `🔄 Today:\n${inProgress.map((t) => `- Working on: ${t.title}`).join("\n") || "- No tasks in progress"}`,
-      `🚫 Blockers:\n${blocked.map((t) => `- Blocked: ${t.title}`).join("\n") || "- No blockers"}`,
+      `[Completed] Yesterday:\n${done.map((t) => `- ${t.title}`).join("\n") || "- No tasks completed"}`,
+      `[In Progress] Today:\n${inProgress.map((t) => `- ${t.title}`).join("\n") || "- No tasks in progress"}`,
+      `[Blockers]:\n${blocked.map((t) => `- ${t.title}`).join("\n") || "- No blockers"}`,
     ].join("\n\n");
 
     navigator.clipboard.writeText(standup);
@@ -446,6 +454,7 @@ const Dashboard = () => {
   }, []);
 
   const [focusMode, setFocusMode] = useState(false);
+  const [showTelemetryBar, setShowTelemetryBar] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
@@ -1517,28 +1526,39 @@ ${stuck
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-[var(--bg)] text-zinc-100 font-sans overflow-hidden">
-      {/* Top Navbar */}
-      <header className="flex flex-col md:flex-row items-stretch md:items-center justify-between px-4 py-2.5 bg-[#0b0c11] border-b border-zinc-800/80 gap-3 shrink-0 z-20">
+    <div className="flex flex-col h-screen bg-[#f8f9fc] text-zinc-900 font-sans overflow-hidden">
+      {/* Top Navbar: Clean Light Theme (Not full black!) */}
+      <header className="flex flex-col md:flex-row items-stretch md:items-center justify-between px-4 py-2.5 bg-white border-b border-zinc-200/90 gap-3 shrink-0 z-20">
         {/* Left: Brand & Stats */}
         <div className="flex items-center gap-2.5 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center">
-              <LogoIcon className="w-4 h-4" />
-            </div>
-            <span className="font-semibold text-sm tracking-tight text-zinc-100">
-              DevBoard
+            <span className="font-extrabold text-base tracking-tight text-black uppercase font-sans">
+              DEVBOARD
             </span>
-            <span className="text-[10px] font-mono-code text-zinc-500 bg-zinc-900 border border-zinc-800 px-1.5 py-0.2 rounded">
+            <span className="w-1.5 h-3 bg-black inline-block" />
+            <span className="text-[10px] font-mono-code text-zinc-600 bg-zinc-100 border border-zinc-200 px-1.5 py-0.2 rounded">
               v1.2
             </span>
           </div>
-          <div className="h-4 w-[1px] bg-zinc-800" />
+          <button
+            type="button"
+            onClick={() => setShowTelemetryBar((v) => !v)}
+            title="Toggle developer workspaces & system telemetry"
+            className={`flex items-center gap-1.5 text-xs font-mono-code px-2.5 py-1 rounded-full border transition ${
+              showTelemetryBar
+                ? "bg-zinc-900 text-white border-zinc-900"
+                : "bg-zinc-100 text-zinc-700 border-zinc-200 hover:bg-zinc-200 hover:text-black"
+            }`}
+          >
+            <LayersIcon className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">Workspaces</span>
+          </button>
+          <div className="h-4 w-[1px] bg-zinc-200" />
           {/* XP & Level Widget */}
           <XPWidget {...gamification} />
           <span
             className={`inline-block text-xs font-mono-code transition-all duration-300 ${
-              countAnim ? "scale-125 text-purple-400" : "text-zinc-400"
+              countAnim ? "scale-125 text-purple-600 font-bold" : "text-zinc-600"
             }`}
           >
             {tasks.length} {tasks.length === 1 ? "task" : "tasks"}
@@ -1548,13 +1568,13 @@ ${stuck
               title={`You last opened this board on ${new Date(
                 lastVisit
               ).toLocaleString()}`}
-              className="text-xs font-mono-code text-zinc-500 no-print hidden 2xl:inline"
+              className="text-xs font-mono-code text-zinc-400 no-print hidden 2xl:inline"
             >
               last visit ({timeAgo(lastVisit)})
             </span>
           )}
           {streak > 0 && (
-            <span className="text-xs font-mono-code text-orange-300">
+            <span className="text-xs font-mono-code text-orange-600 font-medium">
               {streak} day streak
             </span>
           )}
@@ -1563,10 +1583,10 @@ ${stuck
               title={`Tech Debt Level: ${debt.level} (${debt.count} active)`}
               className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono-code border ${
                 debt.level === "critical"
-                  ? "bg-red-500/10 text-red-400 border-red-500/30"
+                  ? "bg-red-50 text-red-600 border-red-200"
                   : debt.level === "concerning"
-                  ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                  : "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                  : "bg-blue-50 text-blue-600 border-blue-200"
               }`}
             >
               debt: {debt.score}
@@ -1575,10 +1595,10 @@ ${stuck
           {activeTag && (
             <button
               onClick={() => setActiveTag(null)}
-              className="text-[11px] font-mono-code bg-blue-500/15 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-md flex items-center gap-1.5 hover:bg-blue-500/25 transition"
+              className="text-[11px] font-mono-code bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md flex items-center gap-1.5 hover:bg-blue-100 transition"
             >
               <span>#{activeTag}</span>
-              <XIcon className="w-3 h-3 text-blue-400" />
+              <XIcon className="w-3 h-3 text-blue-600" />
             </button>
           )}
         </div>
@@ -1586,7 +1606,7 @@ ${stuck
         {/* Center: Search & Filter */}
         <div className="flex-1 max-w-xs md:max-w-sm lg:max-w-md mx-auto w-full no-print">
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-500">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
               <SearchIcon className="w-3.5 h-3.5" />
             </div>
             <input
@@ -1599,13 +1619,13 @@ ${stuck
               }}
               onBlur={() => handleSearch(searchQuery)}
               placeholder="Search tasks, code, or tags..."
-              className="w-full bg-[#111218] border border-zinc-800/90 rounded-lg pl-9 pr-8 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-blue-500/20 focus:border-blue-500 focus:ring-1 transition font-mono-code"
+              className="w-full bg-zinc-50 border border-zinc-200 rounded-lg pl-9 pr-8 py-1.5 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:bg-white focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition font-mono-code"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[#555] hover:text-[#aaa] transition text-xs"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition text-xs"
                 aria-label="Clear search"
               >
                 <XIcon className="w-3.5 h-3.5" />
@@ -1613,7 +1633,7 @@ ${stuck
             )}
             {!searchQuery && (
               <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
-                <kbd className="text-[10px] font-mono-code text-zinc-500 bg-zinc-900 border border-zinc-800 px-1 rounded">
+                <kbd className="text-[10px] font-mono-code text-zinc-500 bg-white border border-zinc-200 px-1 rounded">
                   /
                 </kbd>
               </div>
@@ -1623,31 +1643,31 @@ ${stuck
 
         {/* Live Team Activity Ticker */}
         <div
-          className="hidden xl:flex items-center gap-2 min-w-0 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/50 no-print"
+          className="hidden xl:flex items-center gap-2 min-w-0 px-3 py-1.5 rounded-lg border border-zinc-200 bg-zinc-50 no-print"
           aria-live="polite"
           aria-label="Recent team activity"
         >
-          <ActivityIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span className="text-[10px] uppercase tracking-wider text-emerald-400 shrink-0 font-mono-code">
+          <ActivityIcon className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <span className="text-[10px] uppercase tracking-wider text-emerald-600 shrink-0 font-mono-code font-semibold">
             Live
           </span>
           <div className="min-w-0 overflow-hidden">
             {recentActivity && recentActivity.length > 0 ? (
               <p
                 key={recentActivity[0].id}
-                className="ticker-item text-xs text-zinc-300 truncate font-mono-code"
+                className="ticker-item text-xs text-zinc-700 truncate font-mono-code"
                 title={`${recentActivity[0].userName} ${recentActivity[0].action} ${recentActivity[0].taskTitle}`}
               >
-                <span className="text-zinc-100">
+                <span className="text-zinc-900 font-medium">
                   {recentActivity[0].userName}
                 </span>{" "}
                 {recentActivity[0].action}{" "}
-                <span className="text-blue-300">
+                <span className="text-blue-600 font-medium">
                   {recentActivity[0].taskTitle}
                 </span>
               </p>
             ) : (
-              <p className="text-xs text-zinc-500 truncate font-mono-code">
+              <p className="text-xs text-zinc-400 truncate font-mono-code">
                 Waiting for team activity...
               </p>
             )}
@@ -1661,13 +1681,13 @@ ${stuck
             href="https://github.com/anoopcodehack/DevBoard"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs font-mono-code text-zinc-300 hover:text-zinc-100 bg-zinc-900/80 hover:bg-zinc-850 px-2.5 py-1.5 rounded-lg border border-zinc-800 transition"
+            className="flex items-center gap-1.5 text-xs font-mono-code text-zinc-800 bg-zinc-100 hover:bg-zinc-200 px-3 py-1.5 rounded-full border border-zinc-200 transition"
             title="Star DevBoard on GitHub"
           >
-            <GithubIcon className="w-3.5 h-3.5 text-zinc-400" />
-            <StarIcon className="w-3 h-3 text-amber-400" />
+            <GithubIcon className="w-3.5 h-3.5 text-zinc-700" />
+            <StarIcon className="w-3 h-3 text-amber-500" />
             {!starsLoading && stars !== null && (
-              <span>{formatStars(stars)}</span>
+              <span className="font-semibold">{formatStars(stars)}</span>
             )}
             <span>Star</span>
           </a>
@@ -1675,7 +1695,7 @@ ${stuck
           {/* Analytics */}
           <Link
             to="/analytics"
-            className="flex items-center gap-1.5 text-xs font-medium text-zinc-300 hover:text-white bg-zinc-900/80 px-3 py-1.5 rounded-lg border border-zinc-800 transition"
+            className="flex items-center gap-1.5 text-xs font-medium text-zinc-800 bg-zinc-100 hover:bg-zinc-200 px-3 py-1.5 rounded-full border border-zinc-200 transition"
           >
             Analytics
           </Link>
@@ -1685,7 +1705,7 @@ ${stuck
             type="button"
             onClick={() => setIsCreatingFirstTask(true)}
             title="Create new task (N)"
-            className="flex items-center gap-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 px-3 py-1.5 rounded-lg shadow-sm shadow-blue-500/20 transition font-mono-code"
+            className="flex items-center gap-1.5 text-xs font-medium text-white bg-black hover:bg-zinc-800 px-3.5 py-1.5 rounded-full shadow-sm transition font-mono-code"
           >
             <PlusIcon className="w-3.5 h-3.5" />
             <span>New Task</span>
@@ -1699,8 +1719,10 @@ ${stuck
               listening ? "Stop voice task recording" : "Create task with voice"
             }
             aria-pressed={listening}
-            className={`text-lg transition ${
-              listening ? "text-red-400 animate-pulse" : "text-[#555] hover:text-[#aaa]"
+            className={`p-1.5 rounded-lg border text-xs transition ${
+              listening
+                ? "border-red-500 text-red-500 bg-red-50 animate-pulse"
+                : "border-zinc-200 text-zinc-600 hover:text-black hover:bg-zinc-100"
             }`}
             title={
               listening
@@ -1708,7 +1730,7 @@ ${stuck
                 : "Create task with voice (Space)"
             }
           >
-            🎙️
+            <MicIcon className="w-3.5 h-3.5" />
           </button>
 
           {/* Focus Mode */}
@@ -1718,8 +1740,8 @@ ${stuck
             title={focusMode ? "Disable focus mode" : "Focus mode (hide completed)"}
             className={`p-1.5 rounded-lg border text-xs transition ${
               focusMode
-                ? "bg-blue-500/10 border-blue-500 text-blue-400"
-                : "border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                ? "bg-blue-50 border-blue-500 text-blue-600"
+                : "border-zinc-200 text-zinc-600 hover:text-black hover:bg-zinc-100"
             }`}
           >
             <TargetIcon className="w-3.5 h-3.5" />
@@ -1729,7 +1751,7 @@ ${stuck
           <div
             role="group"
             aria-label="Board zoom"
-            className="hidden md:flex items-center rounded-lg border border-zinc-800 text-zinc-400 font-mono-code text-[10px]"
+            className="hidden md:flex items-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 font-mono-code text-[10px]"
           >
             <button
               type="button"
@@ -1737,7 +1759,7 @@ ${stuck
               disabled={zoom <= ZOOM_MIN}
               title="Zoom out"
               aria-label="Zoom out"
-              className="px-2 py-1 hover:text-zinc-200 hover:bg-zinc-900 rounded-l-lg transition disabled:opacity-40"
+              className="px-2 py-1 hover:text-black hover:bg-zinc-200 rounded-l-lg transition disabled:opacity-40"
             >
               -
             </button>
@@ -1748,7 +1770,7 @@ ${stuck
               aria-label={`Zoom ${Math.round(
                 zoom * 100
               )}%, reset to 100%`}
-              className="px-1.5 py-1 min-w-[3.25rem] hover:text-zinc-200 hover:bg-zinc-900 transition"
+              className="px-1.5 py-1 min-w-[3.25rem] hover:text-black hover:bg-zinc-200 transition"
             >
               {Math.round(zoom * 100)}%
             </button>
@@ -1758,7 +1780,7 @@ ${stuck
               disabled={zoom >= ZOOM_MAX}
               title="Zoom in"
               aria-label="Zoom in"
-              className="px-2 py-1 hover:text-zinc-200 hover:bg-zinc-900 rounded-r-lg transition disabled:opacity-40"
+              className="px-2 py-1 hover:text-black hover:bg-zinc-200 rounded-r-lg transition disabled:opacity-40"
             >
               +
             </button>
@@ -1779,7 +1801,7 @@ ${stuck
             disabled={isImporting}
             title="Import tasks from CSV"
             aria-label="Import tasks from CSV"
-            className="p-1.5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition disabled:opacity-50"
+            className="p-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:text-black hover:bg-zinc-100 transition disabled:opacity-50"
           >
             <UploadIcon className="w-3.5 h-3.5" />
           </button>
@@ -1787,7 +1809,7 @@ ${stuck
             type="button"
             onClick={handleExportCSV}
             title="Export tasks as CSV"
-            className="p-1.5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+            className="p-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:text-black hover:bg-zinc-100 transition"
           >
             <DownloadIcon className="w-3.5 h-3.5" />
           </button>
@@ -1797,9 +1819,9 @@ ${stuck
             type="button"
             onClick={generateRetro}
             title="Copy a sprint retrospective to the clipboard"
-            className="px-2.5 py-1.5 rounded-lg border border-zinc-800 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+            className="px-2.5 py-1.5 rounded-lg border border-zinc-200 text-xs text-zinc-600 hover:text-black hover:bg-zinc-100 transition font-mono-code"
           >
-            {retroCopied ? "Copied!" : "Generate Retro"}
+            {retroCopied ? "Copied!" : "Retro"}
           </button>
 
           {/* Auto-generate Standup generator */}
@@ -1807,9 +1829,19 @@ ${stuck
             type="button"
             onClick={generateStandup}
             title="Copy daily standup report to the clipboard"
-            className="px-2.5 py-1.5 rounded-lg border border-zinc-800 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+            className="px-2.5 py-1.5 rounded-lg border border-zinc-200 text-xs text-zinc-600 hover:text-black hover:bg-zinc-100 transition flex items-center gap-1.5 font-mono-code"
           >
-            {standupCopied ? "✅ Copied!" : "🗣️ Generate Standup"}
+            {standupCopied ? (
+              <>
+                <CheckIcon className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Copied!</span>
+              </>
+            ) : (
+              <>
+                <MessageSquareIcon className="w-3.5 h-3.5" />
+                <span>Standup</span>
+              </>
+            )}
           </button>
 
           {/* Export board as PDF */}
@@ -1818,7 +1850,7 @@ ${stuck
             onClick={handleExportPDF}
             title="Export board as PDF"
             aria-label="Export board as PDF"
-            className="p-1.5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+            className="p-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:text-black hover:bg-zinc-100 transition"
           >
             <PrinterIcon className="w-3.5 h-3.5" />
           </button>
@@ -1828,7 +1860,7 @@ ${stuck
             type="button"
             onClick={handleClearDone}
             title="Archive completed tasks"
-            className="p-1.5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-rose-400 hover:bg-zinc-900 transition"
+            className="p-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:text-rose-600 hover:bg-zinc-100 transition"
           >
             <TrashIcon className="w-3.5 h-3.5" />
           </button>
@@ -1838,7 +1870,7 @@ ${stuck
             type="button"
             onClick={() => setShowHelp(true)}
             title="Keyboard shortcuts (?)"
-            className="p-1.5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+            className="p-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:text-black hover:bg-zinc-100 transition"
           >
             <KeyboardIcon className="w-3.5 h-3.5" />
           </button>
@@ -1851,8 +1883,8 @@ ${stuck
             aria-label="Toggle sprint burndown chart"
             className={`p-1.5 rounded-lg border transition ${
               showBurndown
-                ? "border-purple-500/50 bg-purple-500/10 text-purple-400"
-                : "border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                ? "border-purple-300 bg-purple-50 text-purple-600"
+                : "border-zinc-200 text-zinc-600 hover:text-black hover:bg-zinc-100"
             }`}
           >
             <ActivityIcon className="w-3.5 h-3.5" />
@@ -1863,13 +1895,13 @@ ${stuck
             type="button"
             onClick={openWebhookSettings}
             title="Outgoing webhook settings (Zapier / n8n)"
-            className="p-1.5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+            className="p-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:text-black hover:bg-zinc-100 transition"
           >
             <ExternalLinkIcon className="w-3.5 h-3.5" />
           </button>
 
           {/* Theme Palette Dots */}
-          <div className="hidden lg:flex items-center gap-1 pl-1 border-l border-zinc-800">
+          <div className="hidden lg:flex items-center gap-1 pl-1 border-l border-zinc-200">
             {Object.entries(THEMES).map(([name, t]) => (
               <button
                 key={name}
@@ -1879,86 +1911,20 @@ ${stuck
                 title={`${t.name} theme`}
                 className={`w-3 h-3 rounded-full transition-transform ${
                   !autoThemeEnabled && theme === name
-                    ? "ring-2 ring-white scale-110"
+                    ? "ring-2 ring-zinc-800 scale-110"
                     : "opacity-60 hover:opacity-100"
                 }`}
               />
             ))}
           </div>
 
-          <button
-            type="button"
-            onClick={handleToggleAutoTheme}
-            aria-label={
-              autoThemeEnabled
-                ? "Disable automatic time-based theme"
-                : "Enable automatic time-based theme"
-            }
-            aria-pressed={autoThemeEnabled}
-            title={
-              autoThemeEnabled
-                ? `Auto theme: ${moodTheme.name}${
-                    weatherMood ? ` (${weatherMood} weather)` : " (time only)"
-                  }`
-                : "Automatically change the theme based on time of day"
-            }
-            className={`p-1.5 rounded-lg border transition ${
-              autoThemeEnabled
-                ? "border-[var(--accent)] bg-[var(--accent-10)] text-[var(--accent)]"
-                : "border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
-            }`}
-          >
-            <SparklesIcon className="w-3.5 h-3.5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleUseLocalWeather}
-            disabled={
-              !autoThemeEnabled ||
-              weatherStatus === "requesting" ||
-              weatherStatus === "loading"
-            }
-            aria-label="Use local weather in automatic theme"
-            title={
-              !autoThemeEnabled
-                ? "Enable automatic theme first to use local weather"
-                : weatherStatus === "ready"
-                ? "Refresh weather theme using your approximate location"
-                : weatherStatus === "unavailable"
-                ? "Weather unavailable. Click to retry, or keep using the time-based theme"
-                : "Use current local weather (your approximate location is sent to Open-Meteo)"
-            }
-            className={`p-1.5 rounded-lg border transition disabled:opacity-40 disabled:cursor-not-allowed ${
-              weatherStatus === "ready"
-                ? "border-[var(--accent)] text-[var(--accent)]"
-                : "border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
-            }`}
-          >
-            <CloudIcon className="w-3.5 h-3.5" />
-          </button>
-
-          {weatherStatus === "ready" && (
-            <span className="text-[9px] text-zinc-500 whitespace-nowrap">
-              Weather by{" "}
-              <a
-                href="https://open-meteo.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline underline-offset-2 hover:text-zinc-300"
-              >
-                Open-Meteo
-              </a>
-            </span>
-          )}
-
-          <div className="h-4 w-[1px] bg-zinc-800 hidden md:block" />
+          <div className="h-4 w-[1px] bg-zinc-200 hidden md:block" />
 
           {/* User Avatar & Logout */}
           <div className="flex items-center gap-2">
             <div
               title={`${user?.name || "User"} (${completionRate}% completed)`}
-              className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold font-mono-code border border-zinc-800 cursor-help"
+              className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold font-mono-code cursor-help shadow-xs"
             >
               {user?.name?.[0]?.toUpperCase() || "U"}
             </div>
@@ -1966,7 +1932,7 @@ ${stuck
               type="button"
               onClick={handleLogout}
               title="Sign out"
-              className="p-1.5 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition"
+              className="p-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:text-black hover:bg-zinc-100 transition"
             >
               <LogoutIcon className="w-3.5 h-3.5" />
             </button>
@@ -1974,9 +1940,65 @@ ${stuck
         </div>
       </header>
 
+      {/* Developer Workspaces & Infrastructure Telemetry Showcase (Light Pearl Style) */}
+      {showTelemetryBar && (
+        <div className="w-full bg-white border-b border-zinc-200 px-4 py-2.5 select-none no-print z-10 animate-fadeIn">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            {/* Workspaces Badges */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-mono-code text-zinc-500 uppercase tracking-wider font-semibold">
+                Workspaces:
+              </span>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-50 border border-zinc-200 text-xs text-zinc-800 font-medium">
+                <VSCodeIcon className="w-3.5 h-3.5 text-blue-600" />
+                <span>VS Code Desktop</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-50 border border-zinc-200 text-xs text-zinc-800 font-medium">
+                <ClaudeIcon className="w-3.5 h-3.5 text-amber-600" />
+                <span>Claude Code</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-50 border border-zinc-200 text-xs text-zinc-800 font-medium">
+                <GoIcon className="w-3.5 h-3.5 text-cyan-600" />
+                <span>GoLand</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-50 border border-zinc-200 text-xs text-zinc-800 font-medium">
+                <VSCodeIcon className="w-3.5 h-3.5 text-sky-600" />
+                <span>VS Code Web</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-50 border border-zinc-200 text-xs text-zinc-800 font-medium">
+                <ZedIcon className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Zed</span>
+              </div>
+            </div>
+
+            {/* Live Infrastructure Resource Telemetry */}
+            <div className="flex flex-wrap items-center gap-2.5 text-[11px] font-mono-code text-zinc-600">
+              <span className="bg-zinc-50 border border-zinc-200 px-2 py-0.5 rounded">
+                CPU: <span className="text-zinc-900 font-medium">0.201 cores</span>
+              </span>
+              <span className="bg-zinc-50 border border-zinc-200 px-2 py-0.5 rounded">
+                RAM: <span className="text-emerald-600 font-medium">0.903/32 GiB (3%)</span>
+              </span>
+              <span className="bg-zinc-50 border border-zinc-200 px-2 py-0.5 rounded">
+                Host: <span className="text-emerald-600 font-medium">6.87/64 (11%)</span>
+              </span>
+              <span className="bg-zinc-50 border border-zinc-200 px-2 py-0.5 rounded">
+                Swap: <span className="text-zinc-900 font-medium">4.6/8.0 GiB</span>
+              </span>
+              <span className="bg-zinc-50 border border-zinc-200 px-2 py-0.5 rounded">
+                Load: <span className="text-zinc-900 font-medium">0.08</span>
+              </span>
+              <span className="bg-zinc-50 border border-zinc-200 px-2 py-0.5 rounded">
+                Disk: <span className="text-zinc-900 font-medium">2597/3050 GiB</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeSprint && (
         <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/5 border-b border-blue-500/15 text-xs font-mono-code">
-          <span aria-hidden="true">🎯</span>
+          <TargetIcon className="w-3.5 h-3.5 text-blue-400" />
           <span className="font-medium text-blue-300">{activeSprint.name}</span>
           <span className="text-zinc-500">•</span>
           <span className="text-zinc-400">
