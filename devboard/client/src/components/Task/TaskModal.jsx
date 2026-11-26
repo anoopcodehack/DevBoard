@@ -29,23 +29,40 @@ import {
   PinIcon,
   XIcon,
   CheckIcon,
+  BugIcon,
+  FileTextIcon,
+  BrainIcon,
+  LoaderIcon,
+  UsersIcon,
+  TerminalIcon,
+  EditIcon,
+  AlertTriangleIcon,
+  AlertCircleIcon,
+  ThumbsUpIcon,
+  FlameIcon,
+  StarIcon,
+  ZapIcon,
+  ClockIcon,
 } from "../common/Icons";
 
 const TEMPLATES = [
   {
-    label: "🐛 Bug",
+    icon: BugIcon,
+    label: "Bug",
     title: "Bug: ",
     tags: "bug",
     priority: "high",
   },
   {
-    label: "✨ Feature",
+    icon: SparklesIcon,
+    label: "Feature",
     title: "Feat: ",
     tags: "enhancement",
     priority: "medium",
   },
   {
-    label: "📝 Docs",
+    icon: FileTextIcon,
+    label: "Docs",
     title: "Docs: ",
     tags: "documentation",
     priority: "low",
@@ -93,7 +110,12 @@ const COLORS = [
   "#E74C3C",
   "",
 ];
-const EMOJIS = ["👍", "🔥", "😅", "💀", "✅"];
+const REACTIONS = [
+  { id: "like", icon: ThumbsUpIcon, label: "Like" },
+  { id: "fire", icon: FlameIcon, label: "Fire" },
+  { id: "star", icon: StarIcon, label: "Star" },
+  { id: "zap", icon: ZapIcon, label: "Fast" },
+];
 
 const detectSmells=(code,language)=>{
   if(!code || typeof code!=='string')return [];
@@ -102,23 +124,23 @@ const detectSmells=(code,language)=>{
   const langLower=language? String(language).toLowerCase():'';
 
   if(code.includes('console.log')){
-    smells.push('🟡 console.log found — remove before PR');
+    smells.push('console.log found — remove before PR');
   }
   if(code.includes('TODO') || code.includes('FIXME')){
-    smells.push('🔴 TODO/FIXME comment — resolve first');
+    smells.push('TODO/FIXME comment — resolve first');
   }
   if (/\bvar\s/.test(code) && (langLower === 'javascript' || langLower === 'js')) {
-    smells.push('🟡 var used — prefer const/let');
+    smells.push('var used — prefer const/let');
   }
   if (code.split('\n').length > 50) {
-    smells.push('🔴 Long function — consider splitting');
+    smells.push('Long function — consider splitting');
   }
   if (
     code.includes('password') && !code.includes('hash') && !code.includes('bcrypt')){
-    smells.push('🔴 Possible plain-text password!');
+    smells.push('Possible plain-text password!');
   }
   if (code.includes('SELECT *')) {
-    smells.push('🟡 SELECT * — specify columns');
+    smells.push('SELECT * — specify columns');
   }
 
   return smells;
@@ -755,16 +777,20 @@ ${task.snippets
         <div className="p-5 flex flex-col gap-3 max-h-[70vh] overflow-y-auto">
             {mode === "create" && (
               <div className="flex flex-wrap gap-2">
-                {TEMPLATES.map((template) => (
-                  <button
-                    key={template.label}
-                    type="button"
-                    onClick={() => applyTemplate(template)}
-                    className="px-3 py-1.5 text-xs rounded-lg border border-[var(--border-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition"
-                  >
-                    {template.label}
-                  </button>
-                ))}
+                {TEMPLATES.map((template) => {
+                  const Icon = template.icon;
+                  return (
+                    <button
+                      key={template.label}
+                      type="button"
+                      onClick={() => applyTemplate(template)}
+                      className="px-3 py-1.5 text-xs rounded-lg border border-[var(--border-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition flex items-center gap-1.5"
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{template.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           <input
@@ -788,7 +814,7 @@ ${task.snippets
             </p>
           )}
 
-          {/* Description Section with ✨ AI Button */}
+          {/* Description Section with AI Button */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs text-[var(--text-secondary)]">
@@ -808,9 +834,19 @@ ${task.snippets
                   type="button"
                   onClick={analyzeComplexity}
                   disabled={!form.title.trim() || isAnalyzing}
-                  className="text-[11px] font-mono-code font-medium text-purple-400 hover:text-purple-300 disabled:opacity-40 transition"
+                  className="text-[11px] font-mono-code font-medium text-purple-400 hover:text-purple-300 disabled:opacity-40 transition flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/40 px-2.5 py-1 rounded-md"
                 >
-                  {isAnalyzing ? "⏳ Analyzing..." : "🧠 Score complexity"}
+                  {isAnalyzing ? (
+                    <>
+                      <LoaderIcon className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                      <span>Analyzing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <BrainIcon className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Score complexity</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -994,8 +1030,9 @@ ${task.snippets
                 }
                 className="accent-purple-500"
               />
-              <span className="text-xs text-[var(--text-secondary)]">
-                👥 Pair programming
+              <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
+                <UsersIcon className="w-3.5 h-3.5" />
+                <span>Pair programming</span>
               </span>
             </label>
 
@@ -1227,9 +1264,11 @@ ${task.snippets
           {/* Existing Snippets */}
           {(!task?.snippets || task.snippets.length === 0) && (
             <div className="text-center py-6">
-              <div className="text-2xl mb-2">💻</div>
-              <p className="font-medium">No code snippets yet</p>
-              <p className="text-sm text-gray-500">
+              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 mx-auto mb-2">
+                <TerminalIcon className="w-5 h-5" />
+              </div>
+              <p className="font-medium text-xs text-zinc-200">No code snippets yet</p>
+              <p className="text-[11px] text-zinc-500 mt-0.5">
                 Add one below to attach code to this task
               </p>
             </div>
@@ -1240,9 +1279,19 @@ ${task.snippets
                 type="button"
                 onClick={handleCopyAllSnippets}
                 title="Copy every snippet of this task at once"
-                className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded"
+                className="text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded flex items-center gap-1.5"
               >
-                {copiedAll ? "✅ Copied all!" : "📋 Copy all snippets"}
+                {copiedAll ? (
+                  <>
+                    <CheckIcon className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Copied all</span>
+                  </>
+                ) : (
+                  <>
+                    <CopyIcon className="w-3.5 h-3.5" />
+                    <span>Copy all snippets</span>
+                  </>
+                )}
               </button>
             </div>
           )}
@@ -1256,9 +1305,10 @@ ${task.snippets
               </span>
               <button
                 onClick={() => handleDeleteSnippet(index)}
-                className="text-red-400 hover:text-red-300 text-xs"
+                className="text-red-400 hover:text-red-300 text-xs flex items-center gap-1"
               >
-                ✕ Remove
+                <XIcon className="w-3 h-3" />
+                <span>Remove</span>
               </button>
             </div>
           ))}
@@ -1338,8 +1388,9 @@ ${task.snippets
           {/* Activity Log */}
           {task?.activity?.length > 0 && (
             <div className="border border-[var(--border-primary)] rounded-lg px-3 py-2">
-              <span className="text-xs text-[var(--text-secondary)] block mb-1.5">
-                📜 Recent activity
+              <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1.5 mb-1.5 font-medium">
+                <ClockIcon className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Recent activity</span>
               </span>
               <ul className="flex flex-col gap-1">
                 {task.activity
@@ -1363,8 +1414,9 @@ ${task.snippets
           {/* Assignee History */}
           {task?.assigneeHistory?.length > 0 && (
             <div className="border border-[var(--border-primary)] rounded-lg px-3 py-2">
-              <span className="text-xs text-[var(--text-secondary)] block mb-1.5">
-                👥 Previously: {task.assigneeHistory.length} assignee{task.assigneeHistory.length === 1 ? "" : "s"}
+              <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1.5 mb-1.5 font-medium">
+                <UsersIcon className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Previously: {task.assigneeHistory.length} assignee{task.assigneeHistory.length === 1 ? "" : "s"}</span>
               </span>
               <ul className="flex flex-col gap-1">
                 {task.assigneeHistory
@@ -1390,8 +1442,9 @@ ${task.snippets
           {/* Title History */}
           {task?.titleHistory?.length > 0 && (
             <div className="border border-[var(--border-primary)] rounded-lg px-3 py-2">
-              <span className="text-xs text-[var(--text-secondary)] block mb-1.5">
-                ✏️ Previous title{task.titleHistory.length === 1 ? "" : "s"}
+              <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1.5 mb-1.5 font-medium">
+                <EditIcon className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Previous title{task.titleHistory.length === 1 ? "" : "s"}</span>
               </span>
               <ul className="flex flex-col gap-1">
                 {task.titleHistory
@@ -1453,12 +1506,13 @@ ${task.snippets
             {snippetCode && (
               <div className="mt-2 space-y-1">
                 {detectSmells(snippetCode, snippetLang).map((smell, index) => (
-                <div
-                  key={index}
-                  className="text-xs font-mono text-amber-300 bg-amber-950/40 px-2.5 py-1 rounded border border-amber-800/50"
-                >
-                  {smell}
-                </div>
+                  <div
+                    key={index}
+                    className="text-xs font-mono-code text-amber-300 bg-amber-950/30 px-2.5 py-1.5 rounded-lg border border-amber-800/40 flex items-center gap-2"
+                  >
+                    <AlertTriangleIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>{smell}</span>
+                  </div>
                 ))}
               </div>
             )}
@@ -1483,19 +1537,22 @@ ${task.snippets
             <option value="4h">4 hours</option>
             <option value="1d">1 day</option>
           </select>
-          <div className="flex items-center gap-1 border-t border-[var(--border-primary)] pt-3 mt-2">
+          <div className="flex items-center gap-1.5 border-t border-[var(--border-primary)] pt-3 mt-2">
             <span className="text-xs text-[var(--text-secondary)] mr-1">
               Reactions:
             </span>
-            {EMOJIS.map((emoji) => {
-              const reaction = task?.reactions?.find((r) => r.emoji === emoji);
+            {REACTIONS.map((item) => {
+              const Icon = item.icon;
+              const reaction = task?.reactions?.find((r) => r.emoji === item.id);
               return (
                 <button
-                  key={emoji}
-                  onClick={() => handleReact(emoji)}
-                  className="text-xs px-2 py-1 rounded-full bg-[#2a2a2f] hover:bg-[#333] transition"
+                  key={item.id}
+                  onClick={() => handleReact(item.id)}
+                  title={item.label}
+                  className="text-xs px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 text-zinc-300 flex items-center gap-1.5 transition"
                 >
-                  {emoji} {reaction?.count || ""}
+                  <Icon className="w-3.5 h-3.5 text-zinc-400" />
+                  {reaction?.count ? <span className="font-mono-code text-[11px]">{reaction.count}</span> : null}
                 </button>
               );
             })}
