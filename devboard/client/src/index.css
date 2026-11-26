@@ -3,33 +3,33 @@
 @tailwind utilities;
 
 :root {
-  /* High-precision Developer Dark Theme (Linear / Vercel style) */
-  --accent: #3b82f6;
-  --accent-10: rgba(59, 130, 246, 0.1);
-  --accent-15: rgba(59, 130, 246, 0.15);
-  --accent-20: rgba(59, 130, 246, 0.2);
-  --accent-30: rgba(59, 130, 246, 0.3);
-  --accent-40: rgba(59, 130, 246, 0.4);
+  /* Modern High-End Developer Pearl Light Theme */
+  --accent: #2563eb;
+  --accent-10: rgba(37, 99, 235, 0.08);
+  --accent-15: rgba(37, 99, 235, 0.12);
+  --accent-20: rgba(37, 99, 235, 0.16);
+  --accent-30: rgba(37, 99, 235, 0.25);
+  --accent-40: rgba(37, 99, 235, 0.35);
 
-  /* Surfaces */
-  --bg: #090a0e;
-  --bg-primary: var(--bg);
-  --bg-card: #121319;
-  --bg-hover: #181a23;
-  --bg-muted: #1e202c;
-  --bg-accent: #0f121d;
-  --bg-input: #0d0e14;
+  /* Surfaces: Clean, Crisp, Not Full Black */
+  --bg: #f8f9fc;
+  --bg-primary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-hover: #f1f3f7;
+  --bg-muted: #e5e7eb;
+  --bg-accent: #f3f4f6;
+  --bg-input: #ffffff;
 
   /* Engineering borders */
-  --border-primary: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --border-highlight: rgba(255, 255, 255, 0.15);
+  --border-primary: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --border-highlight: #cbd5e1;
 
   /* Typography */
-  --text-primary: #f3f4f6;
-  --text-secondary: #9ca3af;
-  --text-tertiary: #6b7280;
-  --text-muted: #4b5563;
+  --text-primary: #09090b;
+  --text-secondary: #52525b;
+  --text-tertiary: #71717a;
+  --text-muted: #9ca3af;
 }
 
 body {
@@ -41,10 +41,24 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Fluid Silk Iridescent Gradient (exact match to Coder pearlescent hero) */
+.bg-silk-iridescent {
+  background: 
+    radial-gradient(ellipse at 85% 15%, rgba(254, 215, 226, 0.95) 0%, transparent 55%),
+    radial-gradient(ellipse at 15% 85%, rgba(233, 213, 255, 0.95) 0%, transparent 60%),
+    radial-gradient(circle at 55% 45%, rgba(255, 237, 213, 0.8) 0%, transparent 50%),
+    linear-gradient(130deg, #d8ccf4 0%, #ecd6f7 28%, #fcd4dd 52%, #fde7da 78%, #d8cef7 100%);
+}
+
+.silk-sheen {
+  background-image: 
+    linear-gradient(118deg, rgba(255, 255, 255, 0.55) 0%, transparent 35%, rgba(167, 139, 250, 0.25) 50%, rgba(251, 113, 133, 0.2) 65%, rgba(255, 255, 255, 0.65) 80%, transparent 100%);
+}
+
 /* Subtle engineering grid (barely perceptible, ultra-clean) */
 .bg-dev-grid {
-  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
