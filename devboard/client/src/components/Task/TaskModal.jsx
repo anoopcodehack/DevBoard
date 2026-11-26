@@ -168,7 +168,7 @@ const TaskModal = ({
   const [reassigningTo, setReassigningTo] = useState("");
   const [showQR, setShowQR] = useState(false);
   const taskShareUrl = task ? `${window.location.origin}/task/${task._id}` : "";
-  const { deleteTask, addTask, allTasks } = useBoard();
+  const { deleteTask, addTask, allTasks, user } = useBoard();
   const teamMembers = useMemo(() => {
     const members = new Map();
     (allTasks || []).forEach((item) => {
@@ -313,6 +313,10 @@ const TaskModal = ({
   // AI Loading & Error States
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [complexity, setComplexity] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [complexityError, setComplexityError] = useState("");
+  const complexityRequestId = useRef(0);
   const [duplicating, setDuplicating] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
   const [gistToken, setGistToken] = useState(() => {
@@ -435,6 +439,12 @@ const TaskModal = ({
     return () => window.removeEventListener("keydown", handlePriorityShortcut);
   }, []);
 
+  useEffect(() => {
+    complexityRequestId.current += 1;
+    setComplexity(null);
+    setComplexityError("");
+  }, [form.title, form.description]);
+
   const handleGenerateAI = async () => {
     if (!form.title.trim()) {
       setAiError("Please enter a task title first.");
@@ -467,6 +477,44 @@ const TaskModal = ({
       setAiError(err.message || "Error generating AI description.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const analyzeComplexity = async () => {
+    if (!form.title.trim()) return;
+
+    const requestId = complexityRequestId.current;
+    const token = user?.token || user?.jwt;
+    setIsAnalyzing(true);
+    setComplexityError("");
+
+    try {
+      const res = await fetch("/api/v1/ai/complexity", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          title: form.title,
+          description: form.description,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to analyze task complexity.");
+      }
+
+      if (requestId === complexityRequestId.current) {
+        setComplexity(data);
+      }
+    } catch (err) {
+      if (requestId === complexityRequestId.current) {
+        setComplexityError(err.message || "Could not analyze task complexity.");
+      }
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -746,15 +794,25 @@ ${task.snippets
               <label className="text-xs text-[var(--text-secondary)]">
                 Description
               </label>
-              <button
-                type="button"
-                onClick={handleGenerateAI}
-                disabled={isGenerating || !form.title.trim()}
-                className="text-[11px] font-mono-code font-medium text-blue-400 hover:text-blue-300 disabled:opacity-40 transition flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 px-2.5 py-1 rounded-md"
-              >
-                <SparklesIcon className="w-3 h-3 text-blue-400" />
-                <span>{isGenerating ? "Generating..." : "Generate AI Description"}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleGenerateAI}
+                  disabled={isGenerating || !form.title.trim()}
+                  className="text-[11px] font-mono-code font-medium text-blue-400 hover:text-blue-300 disabled:opacity-40 transition flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 px-2.5 py-1 rounded-md"
+                >
+                  <SparklesIcon className="w-3 h-3 text-blue-400" />
+                  <span>{isGenerating ? "Generating..." : "Generate AI Description"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={analyzeComplexity}
+                  disabled={!form.title.trim() || isAnalyzing}
+                  className="text-[11px] font-mono-code font-medium text-purple-400 hover:text-purple-300 disabled:opacity-40 transition"
+                >
+                  {isAnalyzing ? "⏳ Analyzing..." : "🧠 Score complexity"}
+                </button>
+              </div>
             </div>
 
             <div className="relative">
@@ -839,6 +897,26 @@ ${task.snippets
             )}
 
             {aiError && <p className="text-xs text-red-400 mt-1">{aiError}</p>}
+            {complexity && (
+              <div
+                className={`mt-2 text-xs ${
+                  complexity.score >= 7
+                    ? "text-red-400"
+                    : complexity.score >= 4
+                      ? "text-yellow-400"
+                      : "text-green-400"
+                }`}
+                role="status"
+              >
+                <span className="font-medium">{complexity.score}/10</span>
+                <span className="ml-2 text-[var(--text-secondary)]">
+                  {complexity.reason}
+                </span>
+              </div>
+            )}
+            {complexityError && (
+              <p className="text-xs text-red-400 mt-1">{complexityError}</p>
+            )}
           </div>
 
           <div>
