@@ -13,19 +13,19 @@ export const BADGES = [
     id: "first_blood",
     name: "First Blood",
     description: "Complete your first task",
-    icon: "🩸",
+    icon: "droplet",
   },
   {
     id: "double_digits",
     name: "Double Digits",
     description: "Complete 10 tasks",
-    icon: "🔟",
+    icon: "hash",
   },
   {
     id: "heavy_hitter",
     name: "Heavy Hitter",
     description: "Complete 5 high-priority tasks",
-    icon: "⚡",
+    icon: "zap",
   },
 ];
 
@@ -195,9 +195,7 @@ export const useXP = () => {
         newlyUnlocked.forEach((badgeId) => {
           const badge = BADGES.find((b) => b.id === badgeId);
           if (badge) {
-            toast.success(`🏆 Badge Unlocked: ${badge.name}!`, {
-              icon: badge.icon,
-            });
+            toast.success(`Achievement Unlocked: ${badge.name}!`);
           }
         });
       }

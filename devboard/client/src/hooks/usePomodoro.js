@@ -4,7 +4,7 @@ const WORK_DURATION = 25 * 60; // 25 minutes
 const BREAK_DURATION = 5 * 60; // 5 minutes
 const LONG_BREAK_DURATION = 15 * 60; // 15 minutes
 
-// 🎵 Web Audio API helper function for soft ding sound
+// Web Audio API helper function for soft ding sound
 const playSoftDing = () => {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -47,7 +47,7 @@ export const usePomodoro = (onSessionComplete) => {
           if (prev <= 1) {
             clearInterval(intervalRef.current);
 
-            // 🚨 Play sound alert when timer reaches 0
+            // Play sound alert when timer reaches 0
             playSoftDing();
 
             setIsRunning(false);

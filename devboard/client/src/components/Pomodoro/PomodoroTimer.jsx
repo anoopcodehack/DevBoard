@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { usePomodoro } from "../../hooks/usePomodoro";
-import { TimerIcon, PlayIcon, PauseIcon, ResetIcon } from "../common/Icons";
+import {
+  TimerIcon,
+  PlayIcon,
+  PauseIcon,
+  ResetIcon,
+  Volume2Icon,
+  VolumeXIcon,
+} from "../common/Icons";
 
 const playAmbient = () => {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -132,48 +139,48 @@ const PomodoroTimer = ({ activeTaskTitle, onSessionComplete }) => {
 
   useEffect(() => {
     if (isRunning) {
-      document.title = `${format(timeLeft)} — ${activeTaskTitle || "Pomodoro"} 🍅`;
+      document.title = `${format(timeLeft)} — ${activeTaskTitle || "Focus Timer"}`;
     } else {
-      document.title = "DevBoard 🗂️";
+      document.title = "DevBoard — Developer Workspace";
     }
   }, [isRunning, timeLeft, activeTaskTitle, format]);
 
   return (
-    <div className="flex items-center justify-between gap-4 bg-[#101217] px-4 py-2 border-b border-zinc-800/80 text-xs select-none">
+    <div className="flex items-center justify-between gap-4 bg-white px-4 py-2 border-b border-zinc-200 text-xs select-none">
       <div className="flex items-center gap-2.5 shrink-0">
-        <div className={`p-1 rounded-md ${isBreak ? "bg-emerald-500/10 text-emerald-400" : isRunning ? "bg-blue-500/10 text-blue-400 animate-pulse" : "bg-zinc-800 text-zinc-400"}`}>
+        <div className={`p-1 rounded-md ${isBreak ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : isRunning ? "bg-blue-50 text-blue-600 border border-blue-200 animate-pulse" : "bg-zinc-100 text-zinc-500 border border-zinc-200"}`}>
           <TimerIcon className="w-3.5 h-3.5" />
         </div>
 
-        <span className="font-mono-code font-semibold tracking-wider text-sm text-zinc-100">
+        <span className="font-mono-code font-semibold tracking-wider text-sm text-zinc-900">
           {format(timeLeft)}
         </span>
 
-        <span className={`px-2 py-0.5 rounded text-[10px] font-mono-code uppercase tracking-wider font-medium ${
+        <span className={`px-2 py-0.5 rounded text-[10px] font-mono-code uppercase tracking-wider font-semibold ${
           isBreak
-            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-            : "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+            : "bg-blue-50 text-blue-700 border border-blue-200"
         }`}>
           {isBreak ? "Break" : `Session #${sessionCount + 1}`}
         </span>
 
         {activeTaskTitle ? (
-          <span className="hidden sm:inline-flex items-center gap-1.5 text-zinc-400 text-[11px] truncate max-w-[240px]">
-            <span className="text-zinc-600">for</span>
-            <span className="text-zinc-300 truncate font-medium">"{activeTaskTitle}"</span>
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-zinc-500 text-[11px] truncate max-w-[240px]">
+            <span className="text-zinc-400">for</span>
+            <span className="text-zinc-800 truncate font-medium">"{activeTaskTitle}"</span>
           </span>
         ) : (
-          <span className="hidden sm:inline text-zinc-600 text-[11px]">
+          <span className="hidden sm:inline text-zinc-400 text-[11px]">
             No task attached
           </span>
         )}
       </div>
 
       {/* Progress Track */}
-      <div className="flex-1 max-w-md h-1.5 bg-zinc-800/80 rounded-full overflow-hidden hidden md:block">
+      <div className="flex-1 max-w-md h-1.5 bg-zinc-100 border border-zinc-200/60 rounded-full overflow-hidden hidden md:block">
         <div
           className={`h-full rounded-full transition-all duration-500 ${
-            isBreak ? "bg-emerald-400" : "bg-blue-500"
+            isBreak ? "bg-emerald-500" : "bg-blue-600"
           }`}
           style={{ width: `${progress}%` }}
         />
@@ -184,14 +191,24 @@ const PomodoroTimer = ({ activeTaskTitle, onSessionComplete }) => {
         <button
           onClick={toggleAmbient}
           type="button"
-          title={ambient ? "Turn off ambient rain" : "Turn on lofi ambient rain"}
+          title={ambient ? "Turn off ambient audio" : "Turn on ambient audio"}
           className={`px-2.5 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition border ${
             ambient
-              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25"
-              : "bg-zinc-800/80 text-zinc-400 border-zinc-700/60 hover:text-zinc-200 hover:bg-zinc-800"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+              : "bg-zinc-100 text-zinc-700 border-zinc-200 hover:text-black hover:bg-zinc-200"
           }`}
         >
-          {ambient ? "🎵 on" : "🎵 off"}
+          {ambient ? (
+            <>
+              <Volume2Icon className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Audio on</span>
+            </>
+          ) : (
+            <>
+              <VolumeXIcon className="w-3.5 h-3.5 text-zinc-500" />
+              <span>Audio off</span>
+            </>
+          )}
         </button>
 
         <button
@@ -199,8 +216,8 @@ const PomodoroTimer = ({ activeTaskTitle, onSessionComplete }) => {
           type="button"
           className={`px-3 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition ${
             isRunning
-              ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
-              : "bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-500/20"
+              ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200"
+              : "bg-black hover:bg-zinc-800 text-white shadow-xs"
           }`}
         >
           {isRunning ? (
@@ -220,7 +237,7 @@ const PomodoroTimer = ({ activeTaskTitle, onSessionComplete }) => {
           onClick={reset}
           type="button"
           title="Reset Pomodoro timer"
-          className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition"
+          className="p-1.5 rounded-md text-zinc-500 hover:text-black hover:bg-zinc-100 transition"
         >
           <ResetIcon className="w-3 h-3" />
         </button>

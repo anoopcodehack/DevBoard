@@ -1,4 +1,19 @@
 import React, { useState } from "react";
+import {
+  TrophyIcon,
+  AwardIcon,
+  DropletIcon,
+  HashIcon,
+  ZapIcon,
+  CheckIcon,
+} from "./Icons";
+
+const renderBadgeIcon = (icon) => {
+  if (icon === "droplet") return <DropletIcon className="w-4 h-4 text-rose-400" />;
+  if (icon === "hash") return <HashIcon className="w-4 h-4 text-blue-400" />;
+  if (icon === "zap") return <ZapIcon className="w-4 h-4 text-amber-400" />;
+  return <AwardIcon className="w-4 h-4 text-purple-400" />;
+};
 
 /**
  * Compact navbar widget displaying user level, thin XP progress bar, and badge achievements.
@@ -39,8 +54,8 @@ export const XPWidget = ({
       </div>
 
       {/* Badges indicator */}
-      <span className="text-xs leading-none" title="Achievements">
-        🏆
+      <span className="flex items-center text-zinc-400 hover:text-amber-400 transition" title="Achievements">
+        <TrophyIcon className="w-3.5 h-3.5 text-amber-400" />
       </span>
 
       {/* Badges Popover / Tooltip */}
@@ -83,14 +98,23 @@ export const XPWidget = ({
                       : "opacity-40"
                   }`}
                 >
-                  <span className="text-base select-none">{badge.icon}</span>
+                  <div className="w-6 h-6 rounded bg-zinc-800/80 flex items-center justify-center shrink-0">
+                    {renderBadgeIcon(badge.icon)}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-zinc-200 truncate">
                         {badge.name}
                       </span>
-                      <span className="text-[9px] font-mono-code text-zinc-400 ml-1">
-                        {isUnlocked ? "✓ Unlocked" : "Locked"}
+                      <span className="text-[9px] font-mono-code text-zinc-400 ml-1 flex items-center gap-1">
+                        {isUnlocked ? (
+                          <>
+                            <CheckIcon className="w-2.5 h-2.5 text-emerald-400" />
+                            <span className="text-emerald-400">Unlocked</span>
+                          </>
+                        ) : (
+                          "Locked"
+                        )}
                       </span>
                     </div>
                     <p className="text-[10px] text-zinc-400 truncate">
