@@ -22,6 +22,7 @@ import {
   EditIcon,
   TrashIcon,
   SparklesIcon,
+  UsersIcon,
 } from "../common/Icons";
 
 // react-syntax-highlighter gives line numbers the "comment" class, so without
@@ -286,11 +287,11 @@ const TaskCard = ({
               ? { borderLeftColor: task.labelColor }
               : {}),
           }}
-          className={`card group bg-[#121319] hover:bg-[#161821] border border-zinc-800/80 hover:border-zinc-700/90 rounded-lg p-3 cursor-pointer transition-all duration-150 relative select-none shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-300/70
-            border-l-[3px] ${task.labelColor ? "" : STATUS_INDICATORS[task.status] || "border-l-zinc-700"}
-            ${snapshot.isDragging ? "shadow-2xl shadow-blue-900/40 border-blue-500 scale-[1.02]" : ""}
-            ${isOverdue ? "!border-rose-500/80 !border-l-rose-500" : ""}
-            ${selected ? "ring-2 ring-blue-500" : ""}
+          className={`card group bg-white hover:bg-zinc-50/90 border border-zinc-200/90 hover:border-zinc-300 rounded-xl p-3.5 cursor-pointer transition-all duration-150 relative select-none shadow-sm hover:shadow-md outline-none focus-visible:ring-2 focus-visible:ring-zinc-400
+            border-l-[3.5px] ${task.labelColor ? "" : STATUS_INDICATORS[task.status] || "border-l-zinc-300"}
+            ${snapshot.isDragging ? "shadow-2xl shadow-blue-500/20 border-blue-400 scale-[1.02]" : ""}
+            ${isOverdue ? "!border-rose-400 !border-l-rose-500" : ""}
+            ${selected ? "ring-2 ring-black" : ""}
             ${isFlipping ? "card-flip" : ""}`}
         >
           {/* Card Top Metadata: Priority, ID, Pin, Copy */}
@@ -335,9 +336,10 @@ const TaskCard = ({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="text-[10px] text-blue-400 hover:text-blue-300"
+                    className="text-[10px] text-blue-400 hover:text-blue-300 inline-flex items-center gap-1"
                   >
-                    👥 Join session →
+                    <UsersIcon className="w-3 h-3" />
+                    <span>Join session →</span>
                   </a>
                 )}
 
@@ -382,13 +384,13 @@ const TaskCard = ({
           </div>
 
           {/* Title */}
-          <h4 className="text-[13px] font-medium text-zinc-100 leading-snug tracking-tight break-words mb-1.5">
+          <h4 className="text-[13px] font-semibold text-zinc-900 leading-snug tracking-tight break-words mb-1.5">
             {highlightMatch(task.title, searchQuery)}
           </h4>
 
           {/* Description Excerpt */}
           {task.description && (
-            <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed mb-2 font-normal">
+            <p className="text-[11px] text-zinc-600 line-clamp-2 leading-relaxed mb-2 font-normal">
               {renderMentions(task.description)}
             </p>
           )}
@@ -406,8 +408,8 @@ const TaskCard = ({
                   }}
                   className={`text-[10px] font-mono-code px-1.5 py-0.5 rounded transition border ${
                     activeTag === tag
-                      ? "bg-blue-500 text-white border-blue-400 font-medium"
-                      : "bg-zinc-800/70 hover:bg-zinc-700/80 text-zinc-400 hover:text-zinc-200 border-zinc-700/50"
+                      ? "bg-black text-white border-black font-medium"
+                      : "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-black border-zinc-200"
                   }`}
                 >
                   #{tag}

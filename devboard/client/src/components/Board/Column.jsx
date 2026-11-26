@@ -8,6 +8,8 @@ import {
   CodeIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  BanIcon,
+  AlertTriangleIcon,
 } from "../common/Icons";
 import confetti from "canvas-confetti";
 import { toast } from "react-toastify";
@@ -379,12 +381,12 @@ const Column = ({
           ) : (
             <div className="flex items-center gap-2 min-w-0">
               <span className={`w-2 h-2 rounded-full shrink-0 ${config.dot}`} />
-              <span className="text-xs font-semibold uppercase tracking-wider text-zinc-200 truncate font-mono-code max-w-[120px]" title={config.label}>
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 truncate font-mono-code max-w-[120px]" title={config.label}>
                 {config.label}
               </span>
 
               <span
-                className={`text-[10px] font-bold bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full transition-transform ${
+                className={`text-[10px] font-bold bg-zinc-200 text-zinc-800 px-2 py-0.5 rounded-full transition-transform ${
                   animate ? "scale-110" : ""
                 }`}
               >
@@ -432,7 +434,7 @@ const Column = ({
                   aria-label={`${blockedCount} blocked tasks`}
                   className="inline-flex shrink-0 items-center gap-1 rounded-md border border-rose-500/20 bg-rose-500/[0.08] px-1.5 py-0.5 text-[10px] font-mono-code text-rose-400"
                 >
-                  <span aria-hidden="true">🚫</span>
+                  <BanIcon className="w-3 h-3 text-rose-400" />
                   <span>{blockedCount}</span>
                 </span>
               )}
@@ -502,7 +504,7 @@ const Column = ({
 
       {isFull && (
         <div className="mb-2 px-2.5 py-1 text-[11px] font-mono-code text-amber-300 bg-amber-500/10 border border-amber-500/25 rounded-md flex items-center gap-1.5">
-          <span>⚠️</span>
+          <AlertTriangleIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
           <span>
             Limit reached ({columnCount}/{limit}), move a task on first
           </span>
@@ -515,19 +517,19 @@ const Column = ({
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`flex flex-col gap-2 rounded-xl p-2 transition-colors flex-1 min-h-[450px] bg-[#0c0d12]/50 border border-zinc-900 ${snapshot.isDraggingOver
-                ? "bg-blue-950/15 border-blue-500/30 ring-1 ring-blue-500/20"
+            className={`flex flex-col gap-2 rounded-xl p-2.5 transition-colors flex-1 min-h-[450px] bg-zinc-100/70 border border-zinc-200/80 ${snapshot.isDraggingOver
+                ? "bg-blue-50/70 border-blue-400 ring-1 ring-blue-400/20"
                 : ""
               }`}
           >
             {collapsed ? (
-              <div className="flex items-center justify-center text-center p-3 text-xs text-zinc-500 border border-dashed border-zinc-800 rounded-lg font-mono-code">
+              <div className="flex items-center justify-center text-center p-3 text-xs text-zinc-500 border border-dashed border-zinc-300 rounded-lg font-mono-code">
                 {tasks.length} task{tasks.length === 1 ? "" : "s"} hidden
               </div>
             ) : tasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-center p-6 text-xs text-zinc-600 border border-dashed border-zinc-800/80 rounded-lg my-auto font-mono-code">
-                <span className="text-zinc-500 mb-1">No active tasks</span>
-                <span className="text-[10px] text-zinc-600">
+              <div className="flex flex-col items-center justify-center text-center p-6 text-xs text-zinc-400 border border-dashed border-zinc-300 rounded-lg my-auto font-mono-code">
+                <span className="text-zinc-500 mb-1 font-medium">No active tasks</span>
+                <span className="text-[10px] text-zinc-400">
                   Drag a card here or press N
                 </span>
               </div>

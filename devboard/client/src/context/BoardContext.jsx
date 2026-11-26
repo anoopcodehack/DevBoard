@@ -181,7 +181,7 @@ export const BoardProvider = ({ children }) => {
     } catch (err) {
       console.error("addTask failed", err);
       if (err.response?.status === 429) {
-        setError('Too many requests — slow down a bit! 🚦');
+        setError('Too many requests — slow down a bit!');
       } else {
         setError('Failed to add task. Try again!');
       }
